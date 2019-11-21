@@ -14,9 +14,9 @@ export function isValidUrl(str: string) {
   }
 }
 
-export function libraryPath(str: string) {
+export async function libraryPath(str: string) {
   return path.join(
-    getConfig().LIBRARY_PATH,
+    (await getConfig()).LIBRARY_PATH,
     "library",
     str
   );

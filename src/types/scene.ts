@@ -4,10 +4,10 @@ import ffmpeg from "fluent-ffmpeg";
 import asyncPool from "tiny-async-pool";
 import { getConfig } from "../config";
 import * as logger from "../logger";
-import * as fs from "fs";
 import { libraryPath } from "./utility";
 import Label from "./label";
 import Actor from "./actor";
+import { statAsync, readdirAsync } from "../fs/async";
 
 export type ThumbnailFile = {
   name: string;
@@ -147,16 +147,18 @@ export default class Scene {
         return resolve([]);
       }
 
+      const config = await getConfig();
+
       const amount = Math.max(
         1,
-        Math.floor((scene.meta.duration || 30) / getConfig().THUMBNAIL_INTERVAL)
+        Math.floor((scene.meta.duration || 30) / config.THUMBNAIL_INTERVAL)
       );
 
       const options = {
-        file: libraryPath(scene.path),
+        file: await libraryPath(scene.path),
         pattern: `${scene._id}-%s.jpg`,
         count: amount,
-        thumbnailPath: libraryPath("thumbnails/")
+        thumbnailPath: await libraryPath("thumbnails/")
       };
 
       try {
@@ -190,20 +192,22 @@ export default class Scene {
           });
         });
 
-        const thumbnailFilenames = fs
-          .readdirSync(options.thumbnailPath)
-          .filter(name => name.includes(scene._id)) as string[];
+        const thumbnailFilenames = (
+          await readdirAsync(options.thumbnailPath)
+        ).filter(name => name.includes(scene._id));
 
-        const thumbnailFiles = thumbnailFilenames.map(name => {
-          const filePath = `thumbnails/${name}`;
-          const stats = fs.statSync(libraryPath(filePath));
-          return {
-            name,
-            path: filePath,
-            size: stats.size,
-            time: stats.mtime.getTime()
-          };
-        });
+        const thumbnailFiles = await Promise.all(
+          thumbnailFilenames.map(async name => {
+            const filePath = `thumbnails/${name}`;
+            const stats = await statAsync(await libraryPath(filePath));
+            return {
+              name,
+              path: filePath,
+              size: stats.size,
+              time: stats.mtime.getTime()
+            };
+          })
+        );
 
         thumbnailFiles.sort((a, b) => a.time - b.time);
 

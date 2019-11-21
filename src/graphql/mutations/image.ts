@@ -3,13 +3,14 @@ import Actor from "../../types/actor";
 import Label from "../../types/label";
 import Scene from "../../types/scene";
 import Image from "../../types/image";
-import { ReadStream, createWriteStream, statSync, unlinkSync } from "fs";
+import { ReadStream, createWriteStream } from "fs";
 import { extname } from "path";
 import * as logger from "../../logger";
 import { extractLabels, extractActors } from "../../extractor";
 import { Dictionary, libraryPath } from "../../types/utility";
 import Movie from "../../types/movie";
 import Jimp from "jimp";
+import { statAsync, unlinkAsync } from "../../fs/async";
 
 type IImageUpdateOpts = Partial<{
   name: string;
@@ -67,7 +68,7 @@ export default {
       pipe.on("close", () => resolve());
     });
 
-    const { size } = statSync(outPath);
+    const { size } = await statAsync(outPath);
     image.meta.size = size;
 
     // File written, now process
@@ -96,14 +97,14 @@ export default {
             args.crop.width,
             args.crop.height
           )
-          .writeAsync(libraryPath(sourcePath));
+          .writeAsync(await libraryPath(sourcePath));
 
         image.meta.dimensions.width = args.crop.width;
         image.meta.dimensions.height = args.crop.height;
       } else {
         image.meta.dimensions.width = _image.bitmap.width;
         image.meta.dimensions.height = _image.bitmap.height;
-        await _image.writeAsync(libraryPath(sourcePath));
+        await _image.writeAsync(await libraryPath(sourcePath));
       }
 
       image.hash = _image.hash();
@@ -134,7 +135,7 @@ export default {
     // Done
 
     await database.insert(database.store.images, image);
-    unlinkSync(outPath);
+    await unlinkAsync(outPath);
     logger.success(`Image '${imageName}' done.`);
     return image;
   },
@@ -199,7 +200,6 @@ export default {
         await Scene.filterImage(image._id);
         await Label.filterImage(image._id);
         await Movie.filterImage(image._id);
-
       }
     }
     return true;

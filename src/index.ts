@@ -8,7 +8,7 @@ const sha = require("js-sha512").sha512;
   const createdConfig = await checkConfig();
 
   if (!createdConfig) {
-    const config = getConfig();
+    const config = await getConfig();
 
     if (config.PASSWORD && process.env.NODE_ENV != "development") {
       let password;

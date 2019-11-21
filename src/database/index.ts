@@ -2,39 +2,50 @@ import DataStore from "nedb";
 import mkdirp from "mkdirp";
 import { libraryPath } from "../types/utility";
 
-try {
-  mkdirp.sync("tmp/");
-  mkdirp.sync(libraryPath("scenes/"));
-  mkdirp.sync(libraryPath("images/"));
-  mkdirp.sync(libraryPath("thumbnails/"));
-} catch (err) {}
-
-const store = {
-  scenes: new DataStore({
-    autoload: true,
-    filename: libraryPath("scenes.db")
-  }),
-  actors: new DataStore({
-    autoload: true,
-    filename: libraryPath("actors.db")
-  }),
-  images: new DataStore({
-    autoload: true,
-    filename: libraryPath("images.db")
-  }),
-  labels: new DataStore({
-    autoload: true,
-    filename: libraryPath("labels.db")
-  }),
-  movies: new DataStore({
-    autoload: true,
-    filename: libraryPath("movies.db")
-  }),
-  studios: new DataStore({
-    autoload: true,
-    filename: libraryPath("studios.db")
-  })
+let store = {} as {
+  scenes: DataStore;
+  actors: DataStore;
+  images: DataStore;
+  labels: DataStore;
+  movies: DataStore;
+  studios: DataStore;
 };
+
+(async () => {
+  try {
+    mkdirp.sync("tmp/");
+    mkdirp.sync(await libraryPath("scenes/"));
+    mkdirp.sync(await libraryPath("images/"));
+    mkdirp.sync(await libraryPath("thumbnails/"));
+  } catch (err) {}
+
+  store = {
+    scenes: new DataStore({
+      autoload: true,
+      filename: await libraryPath("scenes.db")
+    }),
+    actors: new DataStore({
+      autoload: true,
+      filename: await libraryPath("actors.db")
+    }),
+    images: new DataStore({
+      autoload: true,
+      filename: await libraryPath("images.db")
+    }),
+    labels: new DataStore({
+      autoload: true,
+      filename: await libraryPath("labels.db")
+    }),
+    movies: new DataStore({
+      autoload: true,
+      filename: await libraryPath("movies.db")
+    }),
+    studios: new DataStore({
+      autoload: true,
+      filename: await libraryPath("studios.db")
+    })
+  };
+})();
 
 export function insert<T>(store: DataStore, doc: T | T[]) {
   return new Promise((resolve, reject) => {

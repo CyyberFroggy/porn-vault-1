@@ -1,6 +1,11 @@
-import { readFileSync, writeFileSync, existsSync } from "fs";
 import * as logger from "../logger";
 import setupFunction from "../setup";
+import { exists, writeFile, readFile } from "fs";
+import { promisify } from "util";
+
+const existsAsync = promisify(exists);
+const readFileAsync = promisify(readFile);
+const writeFileAsync = promisify(writeFile);
 
 export interface IConfig {
   LIBRARY_PATH: string;
@@ -29,8 +34,8 @@ export const defaultConfig: IConfig = {
 let config = JSON.parse(JSON.stringify(defaultConfig)) as IConfig;
 
 export async function checkConfig() {
-  if (existsSync("config.json")) {
-    config = JSON.parse(readFileSync("config.json", "utf-8"));
+  if (await existsAsync("config.json")) {
+    config = JSON.parse(await readFileAsync("config.json", "utf-8"));
 
     let defaultOverride = false;
     for (const key in defaultConfig) {
@@ -41,19 +46,21 @@ export async function checkConfig() {
     }
 
     if (defaultOverride) {
-      writeFileSync("config.json", JSON.stringify(config), "utf-8");
+      await writeFileAsync("config.json", JSON.stringify(config), "utf-8");
     }
     return false;
   } else {
     config = await setupFunction();
-    writeFileSync("config.json", JSON.stringify(config), "utf-8");
+    await writeFileAsync("config.json", JSON.stringify(config), "utf-8");
     logger.warn("Created config.json. Please edit.");
     return true;
   }
 }
 
-export function getConfig() {
-  if (existsSync("config.json"))
-    return JSON.parse(readFileSync("config.json", "utf-8")) as IConfig;
+export async function getConfig() {
+  if (await existsAsync("config.json"))
+    return JSON.parse(
+      await readFileAsync("config.json", "utf-8")
+    ) as IConfig;
   return defaultConfig;
 }

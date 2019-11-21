@@ -1,13 +1,7 @@
 import * as database from "../../database";
 import Actor from "../../types/actor";
 import Label from "../../types/label";
-import {
-  ReadStream,
-  createWriteStream,
-  statSync,
-  existsSync,
-  unlinkSync
-} from "fs";
+import { ReadStream, createWriteStream } from "fs";
 import { extname } from "path";
 import Scene, { ThumbnailFile } from "../../types/scene";
 import ffmpeg from "fluent-ffmpeg";
@@ -18,6 +12,7 @@ import { extractLabels, extractActors } from "../../extractor";
 import { Dictionary, libraryPath } from "../../types/utility";
 import Movie from "../../types/movie";
 import ora from "ora";
+import { existsAsync, unlinkAsync, statAsync } from "../../fs/async";
 
 type ISceneUpdateOpts = Partial<{
   favorite: boolean;
@@ -113,16 +108,16 @@ export default {
       throw new Error("Invalid file");
     } */
 
-    const config = getConfig();
+    const config = await getConfig();
 
     logger.log(`Checking binaries...`);
 
-    if (!existsSync(config.FFMPEG_PATH)) {
+    if (!(await existsAsync(config.FFMPEG_PATH))) {
       logger.error("FFMPEG not found");
       throw new Error("FFMPEG not found");
     }
 
-    if (!existsSync(config.FFPROBE_PATH)) {
+    if (!(await existsAsync(config.FFPROBE_PATH))) {
       logger.error("FFPROBE not found");
       throw new Error("FFPROBE not found");
     }
@@ -140,7 +135,7 @@ export default {
     logger.log(`Getting file...`);
 
     const read = createReadStream() as ReadStream;
-    const write = createWriteStream(libraryPath(sourcePath));
+    const write = createWriteStream(await libraryPath(sourcePath));
 
     try {
       const pipe = read.pipe(write);
@@ -151,28 +146,28 @@ export default {
     } catch (error) {
       logger.error("Error reading file - perhaps a permission problem?");
       try {
-        unlinkSync(libraryPath(sourcePath));
+        await unlinkAsync(await libraryPath(sourcePath));
       } catch (error) {
         logger.warn(
-          `Could not cleanup source file - ${libraryPath(sourcePath)}`
+          `Could not cleanup source file - ${await libraryPath(sourcePath)}`
         );
       }
       throw new Error("Error");
     }
 
     // File written, now process
-    logger.success(`File written to ${libraryPath(sourcePath)}.`);
+    logger.success(`File written to ${await libraryPath(sourcePath)}.`);
 
     try {
-      await new Promise((resolve, reject) => {
-        ffmpeg.ffprobe(libraryPath(sourcePath), (err, data) => {
+      await new Promise(async (resolve, reject) => {
+        ffmpeg.ffprobe(await libraryPath(sourcePath), async (err, data) => {
           if (err) {
             console.log(err);
             return reject(err);
           }
 
           const meta = data.streams[0];
-          const { size } = statSync(libraryPath(sourcePath));
+          const { size } = await statAsync(await libraryPath(sourcePath));
 
           if (meta) {
             scene.meta.dimensions = {
@@ -191,10 +186,10 @@ export default {
     } catch (err) {
       logger.error("Error ffprobing file - perhaps a permission problem?");
       try {
-        unlinkSync(libraryPath(sourcePath));
+        await unlinkAsync(await libraryPath(sourcePath));
       } catch (error) {
         logger.warn(
-          `Could not cleanup source file - ${libraryPath(sourcePath)}`
+          `Could not cleanup source file - ${await libraryPath(sourcePath)}`
         );
       }
       throw new Error("Error");
@@ -332,7 +327,6 @@ export default {
 
         await Image.filterScene(scene._id);
         await Movie.filterScene(scene._id);
-
       }
     }
     return true;

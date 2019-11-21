@@ -12,7 +12,7 @@ import { checkPassword, passwordHandler } from "./password";
 import cors from "cors";
 import { getConfig } from "./config/index";
 
-export default () => {
+export default async () => {
   const app = express();
   app.use(cors({ origin: "*" }));
 
@@ -43,14 +43,14 @@ export default () => {
 
     if (scene && scene.path) {
       Scene.watch(scene);
-      res.sendFile(libraryPath(scene.path));
+      res.sendFile(await libraryPath(scene.path));
     } else next(404);
   });
 
   app.use("/image/:image", async (req, res, next) => {
     const image = await Image.getById(req.params.image);
 
-    if (image && image.path) res.sendFile(libraryPath(image.path));
+    if (image && image.path) res.sendFile(await libraryPath(image.path));
     else next(404);
   });
 
@@ -69,7 +69,7 @@ export default () => {
     }
   );
 
-  const port = getConfig().PORT || 3000;
+  const port = (await getConfig()).PORT || 3000;
 
   app.listen(port, () => {
     console.log(`Server running in Port ${port}`);
