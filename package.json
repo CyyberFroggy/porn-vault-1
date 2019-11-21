@@ -11,13 +11,13 @@
     "test": "exit 1",
     "build": "npm run build:server && npm run build:app && cp -r ./app/dist ./release/app",
     "build:app": "cd app && npm run build && cd ..",
-    "build:server": "pkg . --targets node10 --out-path ./release",
-    "build:all": "npm run build:linux64 && npm run build:win64 && npm run build:mac64",
-    "build:linux64": "pkg . --out-path ./releases/linux --targets node10-linux-x64 && npm run build:app && cp -r ./app/dist ./releases/linux/app && npm run zip:linux64",
-    "build:win64": "pkg . --out-path ./releases/win --targets node10-win-x64 && npm run build:app && cp -r ./app/dist ./releases/win/app && npm run zip:win64",
-    "build:mac64": "pkg . --out-path ./releases/mac --targets node10-macos-x64 && npm run build:app && cp -r ./app/dist ./releases/mac/app && npm run zip:mac",
-    "zip:linux64": "zip -r ./releases/linux.zip ./releases/linux",
-    "zip:win64": "zip -r ./releases/win.zip ./releases/win64",
+    "build:server": "tsc && pkg . --targets node10 --out-path ./release",
+    "build:all": "npm run build:app && npm run build:linux && npm run build:win && npm run build:mac",
+    "build:linux": "pkg . --out-path ./releases/linux --targets node10-linux-x64 && cp -r ./app/dist ./releases/linux/app && npm run zip:linux",
+    "build:win": "pkg . --out-path ./releases/win --targets node10-win-x64 && cp -r ./app/dist ./releases/win/app && npm run zip:win",
+    "build:mac": "pkg . --out-path ./releases/mac --targets node10-macos-x64 && cp -r ./app/dist ./releases/mac/app && npm run zip:mac",
+    "zip:linux": "zip -r ./releases/linux.zip ./releases/linux",
+    "zip:win": "zip -r ./releases/win.zip ./releases/win",
     "zip:mac": "zip -r ./releases/mac.zip ./releases/mac"
   },
   "repository": {
@@ -62,6 +62,7 @@
     "@types/mkdirp": "^0.5.2",
     "@types/nedb": "^1.8.9",
     "@types/pug": "^2.0.4",
+    "@types/tiny-async-pool": "^1.0.0",
     "nodemon": "^1.19.4",
     "pkg": "^4.4.0"
   },

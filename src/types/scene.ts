@@ -163,7 +163,7 @@ export default class Scene {
 
       try {
         const timestamps = [] as string[];
-        const startPositionPercent = 5;
+        const startPositionPercent = 2;
         const endPositionPercent = 100;
         const addPercent =
           (endPositionPercent - startPositionPercent) / (options.count - 1);
@@ -175,7 +175,9 @@ export default class Scene {
         }
 
         await asyncPool(4, timestamps, timestamp => {
+          const index = timestamps.findIndex(s => s == timestamp);
           return new Promise((resolve, reject) => {
+            logger.log(`Creating thumbnail ${index}`);
             ffmpeg(options.file)
               .on("end", async () => {
                 resolve();
@@ -209,7 +211,9 @@ export default class Scene {
           })
         );
 
-        thumbnailFiles.sort((a, b) => a.time - b.time);
+        thumbnailFiles.sort((a, b) =>
+          a.name.localeCompare(b.name, undefined, { numeric: true })
+        );
 
         resolve(thumbnailFiles);
       } catch (err) {
