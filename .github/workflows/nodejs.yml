@@ -2,8 +2,8 @@ name: Release
 
 on:
   push:
-    branches:
-      - master
+    tags:
+      - '*.*.*'
 
 jobs:
   build:
@@ -13,10 +13,12 @@ jobs:
     - uses: actions/setup-node@v1
       with:
         node-version: '10.x'
-    - name: npm install, build
+    - name: Install
       run: |
         npm ci
         npm run install:app
+    - name: Build
+      run: |
         npm run build:all
     - name: Release
       uses: softprops/action-gh-release@v1
