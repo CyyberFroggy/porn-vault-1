@@ -5,6 +5,7 @@
   "main": "build/index.js",
   "bin": "build/index.js",
   "scripts": {
+    "install:app": "cd app && npm ci && cd ..",
     "watch": "tsc -w",
     "mon": "NODE_ENV=development DEBUG=log,sucess,warn,error,http nodemon build/",
     "dev": "NODE_ENV=development DEBUG=log,success,warn,error,http node build/",
