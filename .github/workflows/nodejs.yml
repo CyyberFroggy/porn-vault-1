@@ -16,6 +16,7 @@ jobs:
     - name: npm install, build
       run: |
         npm ci
+        npm run install:app
         npm run build:all
     - name: Release
       uses: softprops/action-gh-release@v1
