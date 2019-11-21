@@ -33,7 +33,6 @@ library/*
 bin/
 
 configg\.json
-
 ffmpeg
 ffprobe
 app/dist/
