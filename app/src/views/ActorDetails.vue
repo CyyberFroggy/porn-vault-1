@@ -25,6 +25,10 @@
           </v-container>
         </v-col>
         <v-col cols="12" sm="8" md="8" lg="9" xl="10">
+          <div v-if="currentActor.aliases.length">
+            <div class="med--text pa-2">a.k.a. {{ currentActor.aliases.join(", ") }}</div>
+          </div>
+
           <div v-if="currentActor.bornOn">
             <div class="d-flex align-center">
               <v-icon>mdi-calendar</v-icon>
