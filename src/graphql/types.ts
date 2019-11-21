@@ -35,7 +35,7 @@ type Query {
 }
 
 type Actor {
-  id: String!
+  _id: String!
   name: String!
   aliases: [String!]!
   addedOn: Long!
@@ -51,7 +51,7 @@ type Actor {
 }
 
 type Label {
-  id: String!
+  _id: String!
   name: String!
   aliases: [String!]!
   addedOn: Long!
@@ -59,7 +59,7 @@ type Label {
 }
 
 type Scene {
-  id: String!
+  _id: String!
   name: String!
   description: String
   addedOn: Long!
@@ -79,7 +79,7 @@ type Scene {
 }
 
 type Image {
-  id: String!
+  _id: String!
   name: String!
   addedOn: Long!
   favorite: Boolean!
@@ -94,7 +94,7 @@ type Image {
 }
 
 type Movie {
-  id: String!
+  _id: String!
   name: String!
   description: String
   addedOn: Long!

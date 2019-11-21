@@ -1,4 +1,4 @@
-import { database } from "../../database";
+import * as database from "../../database";
 import Actor from "../../types/actor";
 import Scene from "../../types/scene";
 import Image from "../../types/image";
@@ -15,24 +15,20 @@ type IActorUpdateOpts = Partial<{
 }>;
 
 export default {
-  addActor(_, args: Dictionary<any>) {
+  async addActor(_, args: Dictionary<any>) {
     const actor = new Actor(args.name, args.aliases);
 
     if (args.labels) actor.labels = args.labels;
 
-    database
-      .get("actors")
-      .push(actor)
-      .write();
-
+    await database.insert(database.store.actors, actor);
     return actor;
   },
 
-  updateActors(_, { ids, opts }: { ids: string[]; opts: IActorUpdateOpts }) {
+  async updateActors(_, { ids, opts }: { ids: string[]; opts: IActorUpdateOpts }) {
     const updatedActors = [] as Actor[];
 
     for (const id of ids) {
-      const actor = Actor.getById(id);
+      const actor = await Actor.getById(id);
 
       if (actor) {
         if (Array.isArray(opts.aliases)) actor.aliases = opts.aliases;
@@ -49,11 +45,7 @@ export default {
 
         if (typeof opts.rating == "number") actor.rating = opts.rating;
 
-        database
-          .get("actors")
-          .find({ id: actor.id })
-          .assign(actor)
-          .write();
+        await database.update(database.store.actors, { _id: actor._id }, actor);
 
         updatedActors.push(actor);
       } else {
@@ -64,18 +56,18 @@ export default {
     return updatedActors;
   },
 
-  removeActors(_, { ids }: { ids: string[] }) {
+  async removeActors(_, { ids }: { ids: string[] }) {
     for (const id of ids) {
-      const actor = Actor.getById(id);
+      const actor = await Actor.getById(id);
 
       if (actor) {
-        Actor.remove(actor.id);
+        await Actor.remove(actor._id);
 
-        Image.filterActor(actor.id);
-        Scene.filterActor(actor.id);
+        await Image.filterActor(actor._id);
+        await Scene.filterActor(actor._id);
 
-        return true;
       }
     }
+    return true;
   }
 };

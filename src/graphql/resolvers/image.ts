@@ -4,15 +4,14 @@ import Label from "../../types/label";
 import Actor from "../../types/actor";
 
 export default {
-  actors(image: Image) {
-    return image.actors.map(id => Actor.getById(id));
+  async actors(image: Image) {
+    return await Promise.all(image.actors.map(id => Actor.getById(id)));
   },
-  scene(image: Image) {
-    if (image.scene)
-      return Scene.getById(image.scene);
+  async scene(image: Image) {
+    if (image.scene) return await Scene.getById(image.scene);
     return null;
   },
-  labels(image: Image) {
-    return image.labels.map(id => Label.getById(id));
+  async labels(image: Image) {
+    return await Promise.all(image.labels.map(id => Label.getById(id)));
   }
-}
+};

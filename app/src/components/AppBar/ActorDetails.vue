@@ -104,7 +104,7 @@ export default class App extends Vue {
         }
       `,
       variables: {
-        ids: [this.currentActor.id]
+        ids: [this.currentActor._id]
       }
     })
       .then(res => {
@@ -134,7 +134,7 @@ export default class App extends Vue {
         }
       `,
       variables: {
-        ids: [this.currentActor.id],
+        ids: [this.currentActor._id],
         opts: {
           name: this.editName,
           aliases: this.editAliases
@@ -167,7 +167,7 @@ export default class App extends Vue {
         }
       `,
       variables: {
-        ids: [this.currentActor.id],
+        ids: [this.currentActor._id],
         opts: {
           favorite: !this.currentActor.favorite
         }
@@ -191,7 +191,7 @@ export default class App extends Vue {
         }
       `,
       variables: {
-        ids: [this.currentActor.id],
+        ids: [this.currentActor._id],
         opts: {
           bookmark: !this.currentActor.bookmark
         }

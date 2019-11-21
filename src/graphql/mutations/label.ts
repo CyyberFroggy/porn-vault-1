@@ -1,4 +1,4 @@
-import { database } from "../../database";
+import * as database from "../../database";
 import Actor from "../../types/actor";
 import Label from "../../types/label";
 import Scene from "../../types/scene";
@@ -12,53 +12,45 @@ type ILabelUpdateOpts = Partial<{
 }>;
 
 export default {
-  removeLabels(_, { ids }: { ids: string[] }) {
+  async removeLabels(_, { ids }: { ids: string[] }) {
     for (const id of ids) {
-      const label = Label.getById(id);
+      const label = await Label.getById(id);
 
       if (label) {
-        Label.remove(label.id);
+        await Label.remove(label._id);
 
-        Actor.filterLabel(label.id);
-        Scene.filterLabel(label.id);
-        Image.filterLabel(label.id);
+        await Actor.filterLabel(label._id);
+        await Scene.filterLabel(label._id);
+        await Image.filterLabel(label._id);
 
-        return true;
       }
     }
+    return true;
   },
 
-  addLabel(_, args: Dictionary<any>) {
+  async addLabel(_, args: Dictionary<any>) {
     const label = new Label(args.name, args.aliases);
-
-    database
-      .get("labels")
-      .push(label)
-      .write();
-
+    await database.insert(database.store.labels, label);
     return label;
   },
 
-  updateLabels(_, { ids, opts }: { ids: string[]; opts: ILabelUpdateOpts }) {
+  async updateLabels(
+    _,
+    { ids, opts }: { ids: string[]; opts: ILabelUpdateOpts }
+  ) {
     const updatedLabels = [] as Label[];
 
     for (const id of ids) {
-      const label = Label.getById(id);
+      const label = await Label.getById(id);
 
       if (label) {
         if (Array.isArray(opts.aliases)) label.aliases = opts.aliases;
 
         if (typeof opts.name == "string") label.name = opts.name;
 
-        if (typeof opts.thumbnail == "string")
-          label.thumbnail = opts.thumbnail;
+        if (typeof opts.thumbnail == "string") label.thumbnail = opts.thumbnail;
 
-        database
-          .get("labels")
-          .find({ id: label.id })
-          .assign(label)
-          .write();
-
+        await database.update(database.store.labels, { _id: label._id }, label);
         updatedLabels.push(label);
       } else {
         throw new Error(`Label ${id} not found`);

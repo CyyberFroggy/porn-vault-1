@@ -12,8 +12,8 @@
           v-model="selectedLabels"
           multiple
         >
-          <div style="height: 300px; max-height:40vh; overflow-y:scroll">
-            <v-chip label small v-for="label in allLabels" :key="label.id">{{ label.name }}</v-chip>
+          <div style="max-height:40vh; overflow-y:scroll">
+            <v-chip label small v-for="label in allLabels" :key="label._id">{{ label.name }}</v-chip>
           </div>
         </v-chip-group>
         <v-select
@@ -60,11 +60,11 @@
         </v-btn>
       </div>
       <v-row>
-        <v-col v-for="actor in actors" :key="actor.id" cols="12" sm="6" md="4" lg="3">
+        <v-col v-for="actor in actors" :key="actor._id" cols="12" sm="6" md="4" lg="3">
           <actor-card
-            @rate="rate(actor.id, $event)"
-            @bookmark="bookmark(actor.id, $event)"
-            @favorite="favorite(actor.id, $event)"
+            @rate="rate(actor._id, $event)"
+            @bookmark="bookmark(actor._id, $event)"
+            @favorite="favorite(actor._id, $event)"
             :actor="actor"
             style="height: 100%"
           />
@@ -98,6 +98,7 @@
             />
 
             <v-chip
+              label
               @click:close="createSelectedLabels.splice(i, 1)"
               class="mr-1 mb-1"
               close
@@ -107,6 +108,7 @@
               :key="name"
             >{{ name }}</v-chip>
             <v-chip
+              label
               class="mr-1 mb-1"
               @click="openLabelSelectorDialog"
               color="accent"
@@ -286,7 +288,7 @@ export default class SceneList extends Vue {
         query: gql`
           {
             getLabels {
-              id
+              _id
               name
               aliases
             }
@@ -306,7 +308,7 @@ export default class SceneList extends Vue {
   }
 
   labelIDs(indices: number[]) {
-    return indices.map(i => this.allLabels[i]).map(l => l.id);
+    return indices.map(i => this.allLabels[i]).map(l => l._id);
   }
 
   labelNames(indices: number[]) {
@@ -318,7 +320,7 @@ export default class SceneList extends Vue {
   }
 
   rate(id: any, rating: number) {
-    const index = this.actors.findIndex(sc => sc.id == id);
+    const index = this.actors.findIndex(sc => sc._id == id);
 
     if (index > -1) {
       const actor = this.actors[index];
@@ -328,7 +330,7 @@ export default class SceneList extends Vue {
   }
 
   favorite(id: any, favorite: boolean) {
-    const index = this.actors.findIndex(sc => sc.id == id);
+    const index = this.actors.findIndex(sc => sc._id == id);
 
     if (index > -1) {
       const actor = this.actors[index];
@@ -338,7 +340,7 @@ export default class SceneList extends Vue {
   }
 
   bookmark(id: any, bookmark: boolean) {
-    const index = this.actors.findIndex(sc => sc.id == id);
+    const index = this.actors.findIndex(sc => sc._id == id);
 
     if (index > -1) {
       const actor = this.actors[index];
@@ -358,7 +360,7 @@ export default class SceneList extends Vue {
   actorThumbnail(actor: any) {
     if (actor.thumbnail)
       return `${serverBase}/image/${
-        actor.thumbnail.id
+        actor.thumbnail._id
       }?password=${localStorage.getItem("password")}`;
     return "";
   }
@@ -440,7 +442,7 @@ export default class SceneList extends Vue {
       if (this.selectedLabels.length)
         include =
           "include:" +
-          this.selectedLabels.map(i => this.allLabels[i].id).join(",");
+          this.selectedLabels.map(i => this.allLabels[i]._id).join(",");
 
       const query = `query:'${this.query || ""}' ${include} page:${
         this.page
@@ -475,7 +477,7 @@ export default class SceneList extends Vue {
       query: gql`
         {
           getLabels {
-            id
+            _id
             name
             aliases
           }

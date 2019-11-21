@@ -76,7 +76,7 @@ export default class ImageUploader extends Vue {
               ...ActorFragment
             }
             thumbnail {
-              id
+              _id
             }
           }
         }

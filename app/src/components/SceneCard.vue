@@ -1,6 +1,6 @@
 <template>
   <v-card v-if="scene" outlined>
-    <a :href="`#/scene/${scene.id}`">
+    <a :href="`#/scene/${scene._id}`">
       <v-img aspect-ratio="1" class="hover" v-ripple eager :src="thumbnail"></v-img>
     </a>
 
@@ -60,7 +60,7 @@ export default class SceneCard extends Vue {
         }
       `,
       variables: {
-        ids: [this.scene.id],
+        ids: [this.scene._id],
         opts: {
           rating
         }
@@ -80,7 +80,7 @@ export default class SceneCard extends Vue {
         }
       `,
       variables: {
-        ids: [this.scene.id],
+        ids: [this.scene._id],
         opts: {
           favorite: !this.scene.favorite
         }
@@ -100,7 +100,7 @@ export default class SceneCard extends Vue {
         }
       `,
       variables: {
-        ids: [this.scene.id],
+        ids: [this.scene._id],
         opts: {
           bookmark: !this.scene.bookmark
         }
@@ -123,7 +123,7 @@ export default class SceneCard extends Vue {
   get thumbnail() {
     if (this.scene.thumbnail)
       return `${serverBase}/image/${
-        this.scene.thumbnail.id
+        this.scene.thumbnail._id
       }?password=${localStorage.getItem("password")}`;
     return "";
   }

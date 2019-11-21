@@ -4,18 +4,17 @@ import Actor from "../../types/actor";
 import Label from "../../types/label";
 
 export default {
-  scenes(actor: Actor) {
-    return Scene.getByActor(actor.id);
+  async scenes(actor: Actor) {
+    return await Scene.getByActor(actor._id);
   },
-  images(actor: Actor) {
-    return Image.getByActor(actor.id);
+  async images(actor: Actor) {
+    return await Image.getByActor(actor._id);
   },
-  labels(actor: Actor) {
-    return actor.labels.map(id => Label.getById(id));
+  async labels(actor: Actor) {
+    return await Promise.all(actor.labels.map(id => Label.getById(id)));
   },
-  thumbnail(actor: Actor) {
-    if (actor.thumbnail)
-      return Image.getById(actor.thumbnail);
+  async thumbnail(actor: Actor) {
+    if (actor.thumbnail) return await Image.getById(actor.thumbnail);
     return null;
   }
-}
+};

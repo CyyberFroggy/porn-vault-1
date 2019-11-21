@@ -4,18 +4,17 @@ import Actor from "../../types/actor";
 import Label from "../../types/label";
 
 export default {
-  actors(scene: Scene) {
-    return scene.actors.map(id => Actor.getById(id)).filter(Boolean);
+  async actors(scene: Scene) {
+    return await Scene.getActors(scene);
   },
-  images(scene: Scene) {
-    return Image.getByScene(scene.id);
+  async images(scene: Scene) {
+    return await Image.getByScene(scene._id);
   },
-  labels(scene: Scene) {
-    return scene.labels.map(id => Label.getById(id)).filter(Boolean);
+  async labels(scene: Scene) {
+    return await Scene.getLabels(scene);
   },
-  thumbnail(scene: Scene) {
-    if (scene.thumbnail)
-      return Image.getById(scene.thumbnail);
+  async thumbnail(scene: Scene) {
+    if (scene.thumbnail) return await Image.getById(scene.thumbnail);
     return null;
   }
-}
+};

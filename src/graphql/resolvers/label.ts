@@ -2,9 +2,9 @@ import Image from "../../types/image";
 import Label from "../../types/label";
 
 export default {
-  thumbnail(label: Label) {
+  async thumbnail(label: Label) {
     if (label.thumbnail)
-      return Image.getById(label.thumbnail);
+      return await Image.getById(label.thumbnail);
     return null;
   }
 }

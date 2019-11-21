@@ -3,7 +3,7 @@
     <v-card-title>Select actors</v-card-title>
     <v-card-text>
       <v-subheader v-if="value.length">Selected actors</v-subheader>
-      <v-list v-for="(actor, i) in value" :key="'selected-' + actor.id">
+      <v-list v-for="(actor, i) in value" :key="'selected-' + actor._id">
         <v-list-item @click="value.splice(i, 1)">
           <v-list-item-icon>
             <v-avatar>
@@ -22,7 +22,7 @@
         v-model="searchQuery"
         :loading="waiting"
       ></v-text-field>
-      <v-list v-for="actor in notSelectedActors" :key="actor.id">
+      <v-list v-for="actor in notSelectedActors" :key="actor._id">
         <v-list-item @click="select(actor)">
           <v-list-item-icon>
             <v-avatar>
@@ -60,12 +60,12 @@ export default class ActorSelector extends Vue {
   }
 
   get notSelectedActors() {
-    const ids = this.value.map(a => a.id);
-    return this.actors.filter(a => !ids.includes(a.id));
+    const ids = this.value.map(a => a._id);
+    return this.actors.filter(a => !ids.includes(a._id));
   }
 
   select(actor: any) {
-    if (!this.value.find(a => a.id == actor.id)) {
+    if (!this.value.find(a => a._id == actor._id)) {
       this.$emit("input", this.value.concat(actor));
     }
   }
@@ -73,7 +73,7 @@ export default class ActorSelector extends Vue {
   thumbnail(actor: any) {
     if (actor.thumbnail)
       return `${serverBase}/image/${
-        actor.thumbnail.id
+        actor.thumbnail._id
       }?password=${localStorage.getItem("password")}`;
     return "";
   }

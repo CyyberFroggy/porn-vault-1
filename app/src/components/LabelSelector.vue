@@ -2,7 +2,10 @@
   <div>
     <v-list-item-group v-model="innerValue" multiple>
       <v-list>
-        <v-list-item v-for="label in items" :key="label.id">
+        <v-list-item
+          v-for="label in items"
+          :key="label._id"
+        >
           <template v-slot:default="{ active, toggle }">
             <v-list-item-action>
               <v-checkbox color="accent" v-model="active" @click="toggle"></v-checkbox>
@@ -29,7 +32,7 @@ import gql from "graphql-tag";
 @Component
 export default class LabelSelector extends Vue {
   @Prop() value!: any[];
-  @Prop() items!: any[];
+  @Prop(Array) items!: any[];
 
   @Watch("value", { deep: true })
   onValueChange(newVal: any[]) {

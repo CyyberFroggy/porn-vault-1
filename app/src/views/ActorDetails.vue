@@ -75,11 +75,11 @@
           <div class="headline text-center">Scenes</div>
 
           <v-row>
-            <v-col v-for="scene in scenes" :key="scene.id" cols="12" sm="6" md="4" lg="3">
+            <v-col v-for="scene in scenes" :key="scene._id" cols="12" sm="6" md="4" lg="3">
               <scene-card
-                @rate="rateScene(scene.id, $event)"
-                @bookmark="bookmarkScene(scene.id, $event)"
-                @favorite="favoriteScene(scene.id, $event)"
+                @rate="rateScene(scene._id, $event)"
+                @bookmark="bookmarkScene(scene._id, $event)"
+                @favorite="favoriteScene(scene._id, $event)"
                 :scene="scene"
               />
             </v-col>
@@ -98,14 +98,14 @@
         </div>
         <v-container fluid>
           <v-row>
-            <v-col v-for="(image, index) in images" :key="image.id" cols="6" sm="4">
+            <v-col v-for="(image, index) in images" :key="image._id" cols="6" sm="4">
               <ImageCard @open="lightboxIndex = index" width="100%" height="100%" :image="image">
                 <template v-slot:action>
                   <v-tooltip top>
                     <template v-slot:activator="{ on }">
                       <v-btn
                         v-on="on"
-                        @click.native.stop="setAsThumbnail(image.id)"
+                        @click.native.stop="setAsThumbnail(image._id)"
                         class="elevation-2 mb-2"
                         icon
                         style="background: #fafafa;"
@@ -178,9 +178,9 @@
       max-width="400px"
     >
       <ImageUploader
-        :labels="currentActor.labels.map(l => l.id)"
+        :labels="currentActor.labels.map(l => l._id)"
         :name="currentActor.name"
-        :actors="[currentActor.id]"
+        :actors="[currentActor._id]"
         @update-state="isUploading = $event"
         @uploaded="images.unshift($event)"
       />
@@ -326,8 +326,9 @@ export default class ActorDetails extends Vue {
           $name: String
           $crop: Crop
           $actors: [String!]
+          $labels: [String!]
         ) {
-          uploadImage(file: $file, name: $name, crop: $crop, actors: $actors) {
+          uploadImage(file: $file, name: $name, crop: $crop, actors: $actors, labels: $labels) {
             ...ImageFragment
           }
         }
@@ -336,7 +337,8 @@ export default class ActorDetails extends Vue {
       variables: {
         file: this.selectedThumbnail,
         name: this.currentActor.name + " (thumbnail)",
-        actors: [this.currentActor.id],
+        actors: [this.currentActor._id],
+        labels: this.currentActor.labels.map(a => a._id),
         crop: {
           left: this.crop.left,
           top: this.crop.top,
@@ -348,7 +350,7 @@ export default class ActorDetails extends Vue {
       .then(res => {
         const image = res.data.uploadImage;
         this.images.unshift(image);
-        this.setAsThumbnail(image.id);
+        this.setAsThumbnail(image._id);
         this.thumbnailDialog = false;
         this.thumbnailDisplay = null;
         this.selectedThumbnail = null;
@@ -370,7 +372,7 @@ export default class ActorDetails extends Vue {
         }
       `,
       variables: {
-        ids: [this.images[index].id]
+        ids: [this.images[index]._id]
       }
     })
       .then(res => {
@@ -385,7 +387,7 @@ export default class ActorDetails extends Vue {
 
   async fetchPage() {
     try {
-      const query = `page:${this.page} sortDir:asc sortBy:addedOn actors:${this.currentActor.id}`;
+      const query = `page:${this.page} sortDir:asc sortBy:addedOn actors:${this.currentActor._id}`;
 
       const result = await ApolloClient.query({
         query: gql`
@@ -447,13 +449,13 @@ export default class ActorDetails extends Vue {
         mutation($ids: [String!]!, $opts: ActorUpdateOpts!) {
           updateActors(ids: $ids, opts: $opts) {
             thumbnail {
-              id
+              _id
             }
           }
         }
       `,
       variables: {
-        ids: [this.currentActor.id],
+        ids: [this.currentActor._id],
         opts: {
           thumbnail: id
         }
@@ -474,7 +476,7 @@ export default class ActorDetails extends Vue {
         mutation($ids: [String!]!, $opts: ActorUpdateOpts!) {
           updateActors(ids: $ids, opts: $opts) {
             labels {
-              id
+              _id
               name
               aliases
             }
@@ -482,9 +484,9 @@ export default class ActorDetails extends Vue {
         }
       `,
       variables: {
-        ids: [this.currentActor.id],
+        ids: [this.currentActor._id],
         opts: {
-          labels: this.selectedLabels.map(i => this.allLabels[i]).map(l => l.id)
+          labels: this.selectedLabels.map(i => this.allLabels[i]).map(l => l._id)
         }
       }
     })
@@ -506,7 +508,7 @@ export default class ActorDetails extends Vue {
         query: gql`
           {
             getLabels {
-              id
+              _id
               name
               aliases
             }
@@ -516,7 +518,7 @@ export default class ActorDetails extends Vue {
         .then(res => {
           this.allLabels = res.data.getLabels;
           this.selectedLabels = this.currentActor.labels.map(l =>
-            this.allLabels.findIndex(k => k.id == l.id)
+            this.allLabels.findIndex(k => k._id == l._id)
           );
           this.labelSelectorDialog = true;
         })
@@ -529,7 +531,7 @@ export default class ActorDetails extends Vue {
   }
 
   imageLink(image: any) {
-    return `${serverBase}/image/${image.id}?password=${localStorage.getItem(
+    return `${serverBase}/image/${image._id}?password=${localStorage.getItem(
       "password"
     )}`;
   }
@@ -546,7 +548,7 @@ export default class ActorDetails extends Vue {
         }
       `,
       variables: {
-        ids: [this.currentActor.id],
+        ids: [this.currentActor._id],
         opts: {
           rating
         }
@@ -563,13 +565,13 @@ export default class ActorDetails extends Vue {
   get thumbnail() {
     if (this.currentActor.thumbnail)
       return `${serverBase}/image/${
-        this.currentActor.thumbnail.id
+        this.currentActor.thumbnail._id
       }?password=${localStorage.getItem("password")}`;
     return "";
   }
 
   rateScene(id: any, rating: number) {
-    const index = this.scenes.findIndex(sc => sc.id == id);
+    const index = this.scenes.findIndex(sc => sc._id == id);
 
     if (index > -1) {
       const actor = this.scenes[index];
@@ -579,7 +581,7 @@ export default class ActorDetails extends Vue {
   }
 
   favoriteScene(id: any, favorite: boolean) {
-    const index = this.scenes.findIndex(sc => sc.id == id);
+    const index = this.scenes.findIndex(sc => sc._id == id);
 
     if (index > -1) {
       const actor = this.scenes[index];
@@ -589,7 +591,7 @@ export default class ActorDetails extends Vue {
   }
 
   bookmarkScene(id: any, bookmark: boolean) {
-    const index = this.scenes.findIndex(sc => sc.id == id);
+    const index = this.scenes.findIndex(sc => sc._id == id);
 
     if (index > -1) {
       const actor = this.scenes[index];

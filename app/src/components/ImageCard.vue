@@ -33,7 +33,7 @@ export default class ImageCard extends Vue {
   @Prop(Object) image!: any;
 
   imageLink(image: any) {
-    return `${serverBase}/image/${image.id}?password=${localStorage.getItem(
+    return `${serverBase}/image/${image._id}?password=${localStorage.getItem(
       "password"
     )}`;
   }

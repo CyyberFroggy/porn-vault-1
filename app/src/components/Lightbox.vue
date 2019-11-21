@@ -80,7 +80,7 @@
             small
             outlined
             v-for="label in currentImage.labels"
-            :key="label.id"
+            :key="label._id"
           >{{ label.name }}</v-chip>
           <v-chip
             label
@@ -95,9 +95,9 @@
           <div
             class="d-inline-block mr-2 text-center"
             v-for="actor in currentImage.actors"
-            :key="actor.id"
+            :key="actor._id"
           >
-            <a :href="`#/actor/${actor.id}`">
+            <a :href="`#/actor/${actor._id}`">
               <v-avatar size="80">
                 <v-img class="hover" v-ripple eager :src="thumbnail(actor)"></v-img>
               </v-avatar>
@@ -197,14 +197,14 @@ export default class Lightbox extends Vue {
       mutation: gql`
         mutation($ids: [String!]!, $opts: ImageUpdateOpts!) {
           updateImages(ids: $ids, opts: $opts) {
-            id
+            _id
           }
         }
       `,
       variables: {
-        ids: [this.currentImage.id],
+        ids: [this.currentImage._id],
         opts: {
-          actors: this.editActors.map(a => a.id)
+          actors: this.editActors.map(a => a._id)
         }
       }
     }).then(res => {
@@ -237,7 +237,7 @@ export default class Lightbox extends Vue {
 
     if (this.items[newVal]) {
       this.selectedLabels = this.items[newVal].labels.map(l =>
-        this.allLabels.findIndex(k => k.id == l.id)
+        this.allLabels.findIndex(k => k._id == l._id)
       );
     }
   }
@@ -254,7 +254,7 @@ export default class Lightbox extends Vue {
         }
       `,
       variables: {
-        ids: [this.currentImage.id],
+        ids: [this.currentImage._id],
         opts: {
           rating
         }
@@ -278,7 +278,7 @@ export default class Lightbox extends Vue {
         }
       `,
       variables: {
-        ids: [this.currentImage.id],
+        ids: [this.currentImage._id],
         opts: {
           favorite: !this.currentImage.favorite
         }
@@ -306,7 +306,7 @@ export default class Lightbox extends Vue {
         }
       `,
       variables: {
-        ids: [this.currentImage.id],
+        ids: [this.currentImage._id],
         opts: {
           bookmark: !this.currentImage.bookmark
         }
@@ -331,16 +331,16 @@ export default class Lightbox extends Vue {
         mutation($ids: [String!]!, $opts: ImageUpdateOpts!) {
           updateImages(ids: $ids, opts: $opts) {
             labels {
-              id
+              _id
               name
             }
           }
         }
       `,
       variables: {
-        ids: [this.currentImage.id],
+        ids: [this.currentImage._id],
         opts: {
-          labels: this.selectedLabels.map(i => this.allLabels[i]).map(l => l.id)
+          labels: this.selectedLabels.map(i => this.allLabels[i]).map(l => l._id)
         }
       }
     })
@@ -366,7 +366,7 @@ export default class Lightbox extends Vue {
         query: gql`
           {
             getLabels {
-              id
+              _id
               name
               aliases
             }
@@ -376,7 +376,7 @@ export default class Lightbox extends Vue {
         .then(res => {
           this.allLabels = res.data.getLabels;
           this.selectedLabels = this.currentImage.labels.map(l =>
-            this.allLabels.findIndex(k => k.id == l.id)
+            this.allLabels.findIndex(k => k._id == l._id)
           );
           this.labelSelectorDialog = true;
         })
@@ -389,7 +389,7 @@ export default class Lightbox extends Vue {
   }
 
   imageLink(image: any) {
-    return `${serverBase}/image/${image.id}?password=${localStorage.getItem(
+    return `${serverBase}/image/${image._id}?password=${localStorage.getItem(
       "password"
     )}`;
   }
@@ -402,7 +402,7 @@ export default class Lightbox extends Vue {
   thumbnail(actor: any) {
     if (actor.thumbnail)
       return `${serverBase}/image/${
-        actor.thumbnail.id
+        actor.thumbnail._id
       }?password=${localStorage.getItem("password")}`;
     return "";
   }

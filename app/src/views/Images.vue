@@ -13,8 +13,8 @@
           v-model="selectedLabels"
           multiple
         >
-          <div style="height: 300px; max-height:40vh; overflow-y:scroll">
-            <v-chip label small v-for="label in allLabels" :key="label.id">{{ label.name }}</v-chip>
+          <div style="max-height:40vh; overflow-y:scroll">
+            <v-chip label small v-for="label in allLabels" :key="label._id">{{ label.name }}</v-chip>
           </div>
         </v-chip-group>
         <v-select
@@ -56,7 +56,7 @@
     <div class="d-flex align-center">
       <h1 class="font-weight-light mr-3">Images</h1>
       <v-btn @click="openUploadDialog" icon>
-        <v-icon>mdi-cloud-upload</v-icon>
+        <v-icon>mdi-upload</v-icon>
       </v-btn>
     </div>
 
@@ -64,7 +64,7 @@
       <v-row v-if="!waiting">
         <v-col
           v-for="(image, index) in images"
-          :key="image.id"
+          :key="image._id"
           :cols="largeThumbs ? 12 : 6"
           :sm="largeThumbs ? 12 : 4"
           :md="largeThumbs ? 12 : 3"
@@ -191,7 +191,7 @@ export default class ImagesView extends Vue {
         }
       `,
       variables: {
-        ids: [this.images[index].id]
+        ids: [this.images[index]._id]
       }
     })
       .then(res => {
@@ -307,7 +307,7 @@ export default class ImagesView extends Vue {
       if (this.selectedLabels.length)
         include =
           "include:" +
-          this.selectedLabels.map(i => this.allLabels[i].id).join(",");
+          this.selectedLabels.map(i => this.allLabels[i]._id).join(",");
 
       const query = `query:'${this.query || ""}' ${include} page:${
         this.page
@@ -342,7 +342,7 @@ export default class ImagesView extends Vue {
   }
 
   imageLink(image: any) {
-    return `${serverBase}/image/${image.id}?password=${localStorage.getItem(
+    return `${serverBase}/image/${image._id}?password=${localStorage.getItem(
       "password"
     )}`;
   }
@@ -359,7 +359,7 @@ export default class ImagesView extends Vue {
       query: gql`
         {
           getLabels {
-            id
+            _id
             name
           }
         }

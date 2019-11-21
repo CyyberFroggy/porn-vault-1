@@ -1,6 +1,6 @@
 <template>
   <v-card v-if="actor" outlined>
-    <a :href="`#/actor/${actor.id}`">
+    <a :href="`#/actor/${actor._id}`">
       <v-img aspect-ratio="1" class="hover" v-ripple eager :src="thumbnail"></v-img>
     </a>
 
@@ -60,7 +60,7 @@ export default class ActorCard extends Vue {
         }
       `,
       variables: {
-        ids: [this.actor.id],
+        ids: [this.actor._id],
         opts: {
           rating
         }
@@ -80,7 +80,7 @@ export default class ActorCard extends Vue {
         }
       `,
       variables: {
-        ids: [this.actor.id],
+        ids: [this.actor._id],
         opts: {
           favorite: !this.actor.favorite
         }
@@ -100,7 +100,7 @@ export default class ActorCard extends Vue {
         }
       `,
       variables: {
-        ids: [this.actor.id],
+        ids: [this.actor._id],
         opts: {
           bookmark: !this.actor.bookmark
         }
@@ -117,7 +117,7 @@ export default class ActorCard extends Vue {
   get thumbnail() {
     if (this.actor.thumbnail)
       return `${serverBase}/image/${
-        this.actor.thumbnail.id
+        this.actor.thumbnail._id
       }?password=${localStorage.getItem("password")}`;
     return "";
   }

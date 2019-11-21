@@ -2,7 +2,7 @@ import gql from "graphql-tag";
 
 export default gql`
   fragment SceneFragment on Scene {
-    id
+    _id
     name
     releaseDate
     description
@@ -10,11 +10,11 @@ export default gql`
     favorite
     bookmark
     labels {
-      id
+      _id
       name
     }
     thumbnail {
-      id
+      _id
     }
     meta {
       size

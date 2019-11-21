@@ -1,4 +1,4 @@
-import { database } from "../../database";
+import * as database from "../../database";
 import Actor from "../../types/actor";
 import Label from "../../types/label";
 import Scene from "../../types/scene";
@@ -23,19 +23,19 @@ type IImageUpdateOpts = Partial<{
 export default {
   async uploadImage(_, args: Dictionary<any>) {
     for (const actor of args.actors || []) {
-      const actorInDb = Actor.getById(actor);
+      const actorInDb = await Actor.getById(actor);
 
       if (!actorInDb) throw new Error(`Actor ${actor} not found`);
     }
 
     for (const label of args.labels || []) {
-      const labelInDb = Label.getById(label);
+      const labelInDb = await Label.getById(label);
 
       if (!labelInDb) throw new Error(`Label ${label} not found`);
     }
 
     if (args.scene) {
-      const sceneInDb = Scene.getById(args.scene);
+      const sceneInDb = await Scene.getById(args.scene);
 
       if (!sceneInDb) throw new Error(`Scene ${args.scene} not found`);
     }
@@ -54,7 +54,7 @@ export default {
 
     if (args.scene) image.scene = args.scene;
 
-    const outPath = `tmp/${image.id}${ext}`;
+    const outPath = `tmp/${image._id}${ext}`;
 
     logger.log(`Getting file...`);
 
@@ -73,7 +73,7 @@ export default {
     // File written, now process
     logger.success(`File written to ${outPath}.`);
 
-    let sourcePath = `images/${image.id}${ext}`;
+    let sourcePath = `images/${image._id}${ext}`;
     image.path = sourcePath;
 
     if (args.crop) {
@@ -116,7 +116,7 @@ export default {
     }
 
     // Extract actors
-    const extractedActors = extractActors(image.name);
+    const extractedActors = await extractActors(image.name);
     logger.log(`Found ${extractedActors.length} actors in image title.`);
     image.actors.push(...extractedActors);
     image.actors = [...new Set(image.actors)];
@@ -126,50 +126,44 @@ export default {
     }
 
     // Extract labels
-    const extractedLabels = extractLabels(image.name);
+    const extractedLabels = await extractLabels(image.name);
     logger.log(`Found ${extractedLabels.length} labels in image title.`);
     image.labels.push(...extractedLabels);
     image.labels = [...new Set(image.labels)];
 
-    database
-      .get("images")
-      .push(image)
-      .write();
-
     // Done
 
+    await database.insert(database.store.images, image);
     unlinkSync(outPath);
-
     logger.success(`Image '${imageName}' done.`);
-
     return image;
   },
 
-  addActorsToImage(_, { id, actors }: { id: string; actors: string[] }) {
-    const image = Image.getById(id);
+  async addActorsToImage(_, { id, actors }: { id: string; actors: string[] }) {
+    const image = await Image.getById(id);
 
     if (image) {
       if (Array.isArray(actors)) image.actors.push(...actors);
-
       image.actors = [...new Set(image.actors)];
-
-      database
-        .get("images")
-        .find({ id: image.id })
-        .assign(image)
-        .write();
-
+      await database.update(
+        database.store.images,
+        { _id: image._id },
+        { $set: { actors: image.actors } }
+      );
       return image;
     } else {
       throw new Error(`Image ${id} not found`);
     }
   },
 
-  updateImages(_, { ids, opts }: { ids: string[]; opts: IImageUpdateOpts }) {
+  async updateImages(
+    _,
+    { ids, opts }: { ids: string[]; opts: IImageUpdateOpts }
+  ) {
     const updatedImages = [] as Image[];
 
     for (const id of ids) {
-      const image = Image.getById(id);
+      const image = await Image.getById(id);
 
       if (image) {
         if (Array.isArray(opts.actors)) image.actors = opts.actors;
@@ -184,12 +178,7 @@ export default {
 
         if (typeof opts.rating == "number") image.rating = opts.rating;
 
-        database
-          .get("images")
-          .find({ id: image.id })
-          .assign(image)
-          .write();
-
+        await database.update(database.store.images, { _id: image._id }, image);
         updatedImages.push(image);
       } else {
         throw new Error(`Image ${id} not found`);
@@ -199,20 +188,20 @@ export default {
     return updatedImages;
   },
 
-  removeImages(_, { ids }: { ids: string[] }) {
+  async removeImages(_, { ids }: { ids: string[] }) {
     for (const id of ids) {
-      const image = Image.getById(id);
+      const image = await Image.getById(id);
 
       if (image) {
-        Image.remove(image.id);
+        await Image.remove(image._id);
 
-        Actor.filterImage(image.id);
-        Scene.filterImage(image.id);
-        Label.filterImage(image.id);
-        Movie.filterImage(image.id);
+        await Actor.filterImage(image._id);
+        await Scene.filterImage(image._id);
+        await Label.filterImage(image._id);
+        await Movie.filterImage(image._id);
 
-        return true;
       }
     }
+    return true;
   }
 };

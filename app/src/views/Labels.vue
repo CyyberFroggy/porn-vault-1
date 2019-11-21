@@ -158,7 +158,7 @@ export default class Home extends Vue {
   }
 
   get selectedLabelsIDs() {
-    return this.selectedLabels.map(i => this.labels[i]).map(l => l.id);
+    return this.selectedLabels.map(i => this.labels[i]._id);
   }
 
   editLabel() {
@@ -167,17 +167,17 @@ export default class Home extends Vue {
       mutation: gql`
         mutation($ids: [String!]!, $opts: LabelUpdateOpts!) {
           updateLabels(ids: $ids, opts: $opts) {
-            id
+            _id
             name
             aliases
             thumbnail {
-              id
+              _id
             }
           }
         }
       `,
       variables: {
-        ids: [this.editingLabel.id],
+        ids: [this.editingLabel._id],
         opts: {
           name: this.editLabelName,
           aliases: this.editLabelAliases
@@ -185,7 +185,9 @@ export default class Home extends Vue {
       }
     })
       .then(res => {
-        const index = this.labels.findIndex(l => l.id == this.editingLabel.id);
+        const index = this.labels.findIndex(
+          l => l._id == this.editingLabel._id
+        );
 
         if (index > -1) {
           const label = this.labels[index];
@@ -216,7 +218,7 @@ export default class Home extends Vue {
     })
       .then(() => {
         for (const id of this.selectedLabelsIDs) {
-          this.labels = this.labels.filter(l => l.id != id);
+          this.labels = this.labels.filter(l => l._id != id);
         }
         this.selectedLabels = [];
       })
@@ -231,11 +233,11 @@ export default class Home extends Vue {
       mutation: gql`
         mutation($name: String!, $aliases: [String!]) {
           addLabel(name: $name, aliases: $aliases) {
-            id
+            _id
             name
             aliases
             thumbnail {
-              id
+              _id
             }
           }
         }
@@ -246,11 +248,14 @@ export default class Home extends Vue {
       }
     })
       .then(res => {
-        this.labels.push(res.data.addLabel);
-        this.labels.sort((a, b) => a.name.localeCompare(b.name));
+        //this.labels.push(res.data.addLabel);
+        //this.labels.sort((a, b) => a.name.localeCompare(b.name));
+        this.labels = [];
+        this.selectedLabels = [];
         this.createLabel = false;
         this.createLabelName = "";
         this.createLabelAliases = [];
+        this.getLabels();
       })
       .catch(error => {
         console.error(error);
@@ -267,17 +272,17 @@ export default class Home extends Vue {
       .join(", ");
   }
 
-  beforeMount() {
+  getLabels() {
     this.fetchLoader = true;
     ApolloClient.query({
       query: gql`
         {
           getLabels {
-            id
+            _id
             name
             aliases
             thumbnail {
-              id
+              _id
             }
           }
         }
@@ -292,6 +297,10 @@ export default class Home extends Vue {
       .finally(() => {
         this.fetchLoader = false;
       });
+  }
+
+  beforeMount() {
+    this.getLabels();
   }
 }
 </script>

@@ -146,7 +146,7 @@ export default class App extends Vue {
         }
       `,
       variables: {
-        id: this.currentScene.id
+        id: this.currentScene._id
       }
     })
       .then(res => {
@@ -173,7 +173,7 @@ export default class App extends Vue {
         }
       `,
       variables: {
-        ids: [this.currentScene.id]
+        ids: [this.currentScene._id]
       }
     })
       .then(res => {
@@ -201,17 +201,17 @@ export default class App extends Vue {
       mutation: gql`
         mutation($ids: [String!]!, $opts: SceneUpdateOpts!) {
           updateScenes(ids: $ids, opts: $opts) {
-            id
+            _id
           }
         }
       `,
       variables: {
-        ids: [this.currentScene.id],
+        ids: [this.currentScene._id],
         opts: {
           name: this.editName,
           description: this.editDescription,
           streamLinks,
-          actors: this.editActors.map(a => a.id)
+          actors: this.editActors.map(a => a._id)
         }
       }
     })
@@ -245,7 +245,7 @@ export default class App extends Vue {
         }
       `,
       variables: {
-        ids: [this.currentScene.id],
+        ids: [this.currentScene._id],
         opts: {
           favorite: !this.currentScene.favorite
         }
@@ -265,7 +265,7 @@ export default class App extends Vue {
         }
       `,
       variables: {
-        ids: [this.currentScene.id],
+        ids: [this.currentScene._id],
         opts: {
           bookmark: !this.currentScene.bookmark
         }
@@ -282,7 +282,7 @@ export default class App extends Vue {
   get currentSceneURL() {
     if (this.currentScene)
       return `${serverBase}/scene/${
-        this.currentScene.id
+        this.currentScene._id
       }?password=${localStorage.getItem("password")}`;
   }
 }

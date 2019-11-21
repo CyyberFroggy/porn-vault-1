@@ -37,7 +37,7 @@ class ActorModule extends VuexModule {
   @Mutation
   setThumbnail(id: string) {
     if (!this.current.thumbnail) this.current.thumbnail = {};
-    this.current.thumbnail.id = id;
+    this.current.thumbnail._id = id;
   }
 
   @Mutation

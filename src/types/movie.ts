@@ -1,11 +1,11 @@
-import { database } from "../database";
+import * as database from "../database";
 import { generateHash } from "../hash";
 import Scene from "./scene";
 import Actor from "./actor";
 import Label from "./label";
 
 export default class Movie {
-  id: string;
+  _id: string;
   name: string;
   description: string | null = null;
   addedOn = +new Date();
@@ -19,77 +19,83 @@ export default class Movie {
   customFields: any = {};
   studio: string | null = null;
 
-  static filterScene(scene: string) {
-    for (const movie of Movie.getAll()) {
-      if (movie.scenes.includes(scene)) {
-        database
-          .get("movies")
-          .find({ id: movie.id })
-          .assign({ scenes: movie.scenes.filter(s => s != scene) })
-          .write();
-      }
+  static async filterScene(scene: string) {
+    await database.update(
+      database.store.movies,
+      {},
+      { $pull: { scenes: scene } }
+    );
+  }
+
+  static async filterImage(image: string) {
+    await database.update(
+      database.store.movies,
+      { frontCover: image },
+      { $set: { frontCover: null } }
+    );
+
+    await database.update(
+      database.store.movies,
+      { backCover: image },
+      { $set: { backCover: null } }
+    );
+  }
+
+  static async remove(_id: string) {
+    await database.remove(database.store.movies, { _id });
+  }
+
+  static async getById(_id: string) {
+    return (await database.findOne(database.store.movies, {
+      _id
+    })) as Movie | null;
+  }
+
+  static async getAll() {
+    return (await database.find(database.store.movies, {})) as Scene[];
+  }
+
+  static async getLabels(movie: Movie) {
+    const scenes = await Movie.getScenes(movie);
+    const labelIds = [...new Set(scenes.map(scene => scene.labels).flat())];
+
+    const labels = [] as Label[];
+
+    for (const id of labelIds) {
+      const label = await Label.getById(id);
+      if (label) labels.push(label);
     }
+
+    return labels;
   }
 
-  static filterImage(image: string) {
-    database
-      .get("movies")
-      .find({ frontCover: image })
-      .assign({ frontCover: null })
-      .write();
+  static async getActors(movie: Movie) {
+    const scenes = await Movie.getScenes(movie);
+    const actorIds = [...new Set(scenes.map(scene => scene.actors).flat())];
 
-    database
-      .get("movies")
-      .find({ backCover: image })
-      .assign({ backCover: null })
-      .write();
+    const actors = [] as Actor[];
+
+    for (const id of actorIds) {
+      const actor = await Actor.getById(id);
+      if (actor) actors.push(actor);
+    }
+
+    return actors;
   }
 
-  static remove(id: string) {
-    database
-      .get("movies")
-      .remove({ id })
-      .write();
-  }
+  static async getScenes(movie: Movie) {
+    const scenes = [] as Scene[];
 
-  static getById(id: string): Movie | null {
-    return Movie.getAll().find(movie => movie.id == id) || null;
-  }
+    for (const id of movie.scenes) {
+      const scene = await Scene.getById(id);
+      if (scene) scenes.push(scene);
+    }
 
-  static getAll(): Movie[] {
-    return database.get("movies").value();
-  }
-
-  static getLabels(movie: Movie) {
-    return [
-      ...new Set(
-        Movie.getScenes(movie)
-          .map(scene => scene.labels)
-          .flat()
-          .map(Label.getById)
-          .filter(Boolean)
-      )
-    ] as Label[];
-  }
-
-  static getActors(movie: Movie) {
-    return [
-      ...new Set(
-        Movie.getScenes(movie)
-          .map(scene => scene.actors)
-          .flat()
-          .map(Actor.getById)
-          .filter(Boolean)
-      )
-    ] as Actor[];
-  }
-
-  static getScenes(movie: Movie) {
-    return movie.scenes.map(Scene.getById).filter(Boolean) as Scene[];
+    return scenes;
   }
 
   constructor(name: string, scenes: string[] = []) {
-    this.id = generateHash();
+    this._id = generateHash();
     this.name = name.trim();
     this.scenes = scenes;
   }

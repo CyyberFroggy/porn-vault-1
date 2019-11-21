@@ -2,18 +2,18 @@ import gql from "graphql-tag";
 
 export default gql`
   fragment ActorFragment on Actor {
-    id
+    _id
     name
     aliases
     rating
     favorite
     bookmark
     labels {
-      id
+      _id
       name
     }
     thumbnail {
-      id
+      _id
     }
   }
 `;

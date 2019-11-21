@@ -11,43 +11,45 @@ import { Dictionary } from "../../types/utility";
 const PAGE_SIZE = 20;
 
 export default {
-  getActors(_, { query }: { query: string | undefined }) {
+  async getActors(_, { query }: { query: string | undefined }) {
     const timeNow = +new Date();
     logger.log("Searching...");
 
     const options = extractQueryOptions(query);
 
-    let searchDocs = Actor.getAll().map(scene => ({
-      id: scene.id,
-      name: scene.name,
-      bornOn: scene.bornOn,
-      favorite: scene.favorite,
-      bookmark: scene.bookmark,
-      rating: scene.rating,
-      labels: (<Label[]>(
-        scene.labels.map(id => Label.getById(id)).filter(Boolean)
-      )).map(l => ({ id: l.id, name: l.name, aliases: l.aliases })),
-      addedOn: scene.addedOn
-    }));
+    const allActors = await Actor.getAll();
+
+    let searchDocs = await Promise.all(
+      allActors.map(async actor => ({
+        _id: actor._id,
+        name: actor.name,
+        bornOn: actor.bornOn,
+        favorite: actor.favorite,
+        bookmark: actor.bookmark,
+        rating: actor.rating,
+        labels: await Actor.getLabels(actor),
+        addedOn: actor.addedOn
+      }))
+    );
 
     if (options.favorite === true)
-      searchDocs = searchDocs.filter(scene => scene.favorite);
+      searchDocs = searchDocs.filter(actor => actor.favorite);
 
     if (options.bookmark === true)
-      searchDocs = searchDocs.filter(scene => scene.bookmark);
+      searchDocs = searchDocs.filter(actor => actor.bookmark);
 
     if (options.rating > 0)
-      searchDocs = searchDocs.filter(scene => scene.rating >= options.rating);
+      searchDocs = searchDocs.filter(actor => actor.rating >= options.rating);
 
     if (options.include.length) {
-      searchDocs = searchDocs.filter(scene =>
-        options.include.every(id => scene.labels.map(l => l.id).includes(id))
+      searchDocs = searchDocs.filter(actor =>
+        options.include.every(id => actor.labels.map(l => l._id).includes(id))
       );
     }
 
     if (options.exclude.length) {
-      searchDocs = searchDocs.filter(scene =>
-        options.exclude.every(id => !scene.labels.map(l => l.id).includes(id))
+      searchDocs = searchDocs.filter(actor =>
+        options.exclude.every(id => !actor.labels.map(l => l._id).includes(id))
       );
     }
 
@@ -84,36 +86,38 @@ export default {
         break;
     }
 
-    const slice = searchDocs
-      .slice(options.page * PAGE_SIZE, options.page * PAGE_SIZE + PAGE_SIZE)
-      .map(image => Actor.getById(image.id));
+    const slice = await Promise.all(
+      searchDocs
+        .slice(options.page * PAGE_SIZE, options.page * PAGE_SIZE + PAGE_SIZE)
+        .map(image => Actor.getById(image._id))
+    );
 
     logger.log(`Search done in ${(Date.now() - timeNow) / 1000}s.`);
 
     return slice;
   },
 
-  getScenes(_, { query }: { query: string | undefined }) {
+  async getScenes(_, { query }: { query: string | undefined }) {
     const timeNow = +new Date();
     logger.log("Searching...");
 
     const options = extractQueryOptions(query);
 
-    let searchDocs = Scene.getAll().map(scene => ({
-      id: scene.id,
-      name: scene.name,
-      releaseDate: scene.releaseDate,
-      favorite: scene.favorite,
-      bookmark: scene.bookmark,
-      rating: scene.rating,
-      labels: (<Label[]>(
-        scene.labels.map(id => Label.getById(id)).filter(Boolean)
-      )).map(l => ({ id: l.id, name: l.name, aliases: l.aliases })),
-      actors: (<Actor[]>(
-        scene.actors.map(id => Actor.getById(id)).filter(Boolean)
-      )).map(l => ({ id: l.id, name: l.name, aliases: l.aliases })),
-      addedOn: scene.addedOn
-    }));
+    const allScenes = await Scene.getAll();
+
+    let searchDocs = await Promise.all(
+      allScenes.map(async scene => ({
+        _id: scene._id,
+        name: scene.name,
+        releaseDate: scene.releaseDate,
+        favorite: scene.favorite,
+        bookmark: scene.bookmark,
+        rating: scene.rating,
+        labels: await Scene.getLabels(scene),
+        actors: await Scene.getActors(scene),
+        addedOn: scene.addedOn
+      }))
+    );
 
     if (options.favorite === true)
       searchDocs = searchDocs.filter(scene => scene.favorite);
@@ -126,19 +130,19 @@ export default {
 
     if (options.include.length) {
       searchDocs = searchDocs.filter(scene =>
-        options.include.every(id => scene.labels.map(l => l.id).includes(id))
+        options.include.every(id => scene.labels.map(l => l._id).includes(id))
       );
     }
 
     if (options.exclude.length) {
       searchDocs = searchDocs.filter(scene =>
-        options.exclude.every(id => !scene.labels.map(l => l.id).includes(id))
+        options.exclude.every(id => !scene.labels.map(l => l._id).includes(id))
       );
     }
 
     if (options.actors.length) {
       searchDocs = searchDocs.filter(scene =>
-        options.actors.every(id => scene.actors.map(a => a.id).includes(id))
+        options.actors.every(id => scene.actors.map(a => a._id).includes(id))
       );
     }
 
@@ -187,36 +191,38 @@ export default {
         break;
     }
 
-    const slice = searchDocs
-      .slice(options.page * PAGE_SIZE, options.page * PAGE_SIZE + PAGE_SIZE)
-      .map(image => Scene.getById(image.id));
+    const slice = Promise.all(
+      searchDocs
+        .slice(options.page * PAGE_SIZE, options.page * PAGE_SIZE + PAGE_SIZE)
+        .map(image => Scene.getById(image._id))
+    );
 
     logger.log(`Search done in ${(Date.now() - timeNow) / 1000}s.`);
 
     return slice;
   },
 
-  getImages(_, { query }: { query: string | undefined }) {
+  async getImages(_, { query }: { query: string | undefined }) {
     const timeNow = +new Date();
     logger.log("Searching...");
 
     const options = extractQueryOptions(query);
 
-    let searchDocs = Image.getAll().map(image => ({
-      id: image.id,
-      name: image.name,
-      favorite: image.favorite,
-      bookmark: image.bookmark,
-      rating: image.rating,
-      labels: (<Label[]>(
-        image.labels.map(id => Label.getById(id)).filter(Boolean)
-      )).map(l => ({ id: l.id, name: l.name, aliases: l.aliases })),
-      actors: (<Actor[]>(
-        image.actors.map(id => Actor.getById(id)).filter(Boolean)
-      )).map(l => ({ id: l.id, name: l.name, aliases: l.aliases })),
-      addedOn: image.addedOn,
-      scene: image.scene
-    }));
+    const allImages = await Image.getAll();
+
+    let searchDocs = await Promise.all(
+      allImages.map(async image => ({
+        _id: image._id,
+        name: image.name,
+        favorite: image.favorite,
+        bookmark: image.bookmark,
+        rating: image.rating,
+        labels: await Image.getLabels(image),
+        actors: await Image.getActors(image),
+        addedOn: image.addedOn,
+        scene: image.scene
+      }))
+    );
 
     if (options.favorite === true)
       searchDocs = searchDocs.filter(image => image.favorite);
@@ -229,19 +235,19 @@ export default {
 
     if (options.include.length) {
       searchDocs = searchDocs.filter(image =>
-        options.include.every(id => image.labels.map(l => l.id).includes(id))
+        options.include.every(id => image.labels.map(l => l._id).includes(id))
       );
     }
 
     if (options.exclude.length) {
       searchDocs = searchDocs.filter(image =>
-        options.exclude.every(id => !image.labels.map(l => l.id).includes(id))
+        options.exclude.every(id => !image.labels.map(l => l._id).includes(id))
       );
     }
 
     if (options.actors.length) {
       searchDocs = searchDocs.filter(image =>
-        options.actors.every(id => image.actors.map(a => a.id).includes(id))
+        options.actors.every(id => image.actors.map(a => a._id).includes(id))
       );
     }
 
@@ -284,37 +290,40 @@ export default {
         break;
     }
 
-    const slice = searchDocs
-      .slice(options.page * PAGE_SIZE, options.page * PAGE_SIZE + PAGE_SIZE)
-      .map(image => Image.getById(image.id));
+    const slice = await Promise.all(
+      searchDocs
+        .slice(options.page * PAGE_SIZE, options.page * PAGE_SIZE + PAGE_SIZE)
+        .map(image => Image.getById(image._id))
+    );
 
     logger.log(`Search done in ${(Date.now() - timeNow) / 1000}s.`);
 
     return slice;
   },
 
-  getSceneById(_, args: Dictionary<any>) {
-    return Scene.getById(args.id);
+  async getSceneById(_, args: Dictionary<any>) {
+    return await Scene.getById(args.id);
   },
 
-  getActorById(_, args: Dictionary<any>) {
-    return Actor.getById(args.id);
+  async getActorById(_, args: Dictionary<any>) {
+    return await Actor.getById(args.id);
   },
-  findActors(_, args: Dictionary<any>) {
-    return Actor.find(args.name);
-  },
-
-  getLabelById(_, args: Dictionary<any>) {
-    return Label.getById(args.id);
-  },
-  getLabels() {
-    return Label.getAll().sort((a, b) => a.name.localeCompare(b.name));
-  },
-  findLabel(_, args: Dictionary<any>) {
-    return Label.find(args.name);
+  async findActors(_, args: Dictionary<any>) {
+    return await Actor.find(args.name);
   },
 
-  getMovies() {
-    return Movie.getAll();
+  async getLabelById(_, args: Dictionary<any>) {
+    return await Label.getById(args.id);
+  },
+  async getLabels() {
+    const labels = await Label.getAll();
+    return labels.sort((a, b) => a.name.localeCompare(b.name));
+  },
+  async findLabel(_, args: Dictionary<any>) {
+    return await Label.find(args.name);
+  },
+
+  async getMovies() {
+    return await Movie.getAll();
   }
 };

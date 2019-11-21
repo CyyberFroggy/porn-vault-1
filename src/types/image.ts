@@ -1,5 +1,7 @@
-import { database } from "../database";
+import * as database from "../database";
 import { generateHash } from "../hash";
+import Actor from "./actor";
+import Label from "./label";
 
 export class ImageDimensions {
   width: number | null = null;
@@ -12,7 +14,7 @@ export class ImageMeta {
 }
 
 export default class Image {
-  id: string;
+  _id: string;
   name: string;
   path: string | null = null;
   scene: string | null = null;
@@ -27,59 +29,80 @@ export default class Image {
   studio: string | null = null;
   hash: string | null = null;
 
-  static remove(id: string) {
-    database
-      .get("images")
-      .remove({ id })
-      .write();
+  static async remove(_id: string) {
+    await database.remove(database.store.images, { _id });
   }
 
-  static filterScene(scene: string) {
-    database
-      .get("images")
-      .find({ scene })
-      .assign({ scene: null })
-      .write();
+  static async filterScene(scene: string) {
+    await database.update(
+      database.store.images,
+      { scene },
+      { $set: { scene: null } }
+    );
   }
 
-  static filterActor(actor: string) {
-    for (const image of Image.getAll()) {
-      database
-        .get("images")
-        .find({ id: image.id })
-        .assign({ actors: image.actors.filter(l => l != actor) })
-        .write();
+  static async filterActor(actor: string) {
+    await database.update(
+      database.store.images,
+      {},
+      { $pull: { actors: actor } }
+    );
+  }
+
+  static async filterLabel(label: string) {
+    await database.update(
+      database.store.images,
+      {},
+      { $pull: { labels: label } }
+    );
+  }
+
+  static async getByScene(id: string) {
+    return (await database.find(database.store.images, {
+      scenes: id
+    })) as Image[];
+  }
+
+  static async getByActor(id: string) {
+    return (await database.find(database.store.images, {
+      actors: id
+    })) as Image[];
+  }
+
+  static async getById(_id: string) {
+    return (await database.findOne(database.store.images, {
+      _id
+    })) as Image | null;
+  }
+
+  static async getAll() {
+    return (await database.find(database.store.images, {})) as Image[];
+  }
+
+  static async getActors(image: Image) {
+    const actors = [] as Actor[];
+
+    for (const id of image.actors) {
+      const actor = await Actor.getById(id);
+      if (actor) actors.push(actor);
     }
+
+    return actors;
   }
 
-  static filterLabel(label: string) {
-    for (const image of Image.getAll()) {
-      database
-        .get("images")
-        .find({ id: image.id })
-        .assign({ labels: image.labels.filter(l => l != label) })
-        .write();
+  static async getLabels(image: Image) {
+    const labels = [] as Label[];
+
+    for (const id of image.labels) {
+      const label = await Label.getById(id);
+      if (label) labels.push(label);
     }
-  }
 
-  static getByScene(id: string): Image[] {
-    return Image.getAll().filter(image => image.scene == id);
-  }
-
-  static getByActor(id: string): Image[] {
-    return Image.getAll().filter(image => image.actors.includes(id));
-  }
-
-  static getById(id: string): Image | null {
-    return Image.getAll().find(image => image.id == id) || null;
-  }
-
-  static getAll(): Image[] {
-    return database.get("images").value();
+    return labels;
   }
 
   constructor(name: string) {
-    this.id = generateHash();
+    this._id = generateHash();
     this.name = name.trim();
   }
 }

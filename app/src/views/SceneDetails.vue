@@ -111,11 +111,11 @@
           <h1 class="font-weight-light text-center">Starring</h1>
 
           <v-row>
-            <v-col v-for="actor in actors" :key="actor.id" cols="12" sm="6" md="4" lg="3">
+            <v-col v-for="actor in actors" :key="actor._id" cols="12" sm="6" md="4" lg="3">
               <actor-card
-                @rate="rateActor(actor.id, $event)"
-                @bookmark="bookmarkActor(actor.id, $event)"
-                @favorite="favoriteActor(actor.id, $event)"
+                @rate="rateActor(actor._id, $event)"
+                @bookmark="bookmarkActor(actor._id, $event)"
+                @favorite="favoriteActor(actor._id, $event)"
                 style="height: 100%"
                 :actor="actor"
               />
@@ -135,14 +135,14 @@
         </div>
         <v-container fluid>
           <v-row>
-            <v-col v-for="(image, index) in images" :key="image.id" cols="6" sm="4">
+            <v-col v-for="(image, index) in images" :key="image._id" cols="6" sm="4">
               <ImageCard @open="lightboxIndex = index" width="100%" height="100%" :image="image">
                 <template v-slot:action>
                   <v-tooltip top>
                     <template v-slot:activator="{ on }">
                       <v-btn
                         v-on="on"
-                        @click.native.stop="setAsThumbnail(image.id)"
+                        @click.native.stop="setAsThumbnail(image._id)"
                         class="elevation-2 mb-2"
                         icon
                         style="background: #fafafa;"
@@ -215,10 +215,10 @@
       max-width="400px"
     >
       <ImageUploader
-        :labels="currentScene.labels.map(l => l.id)"
+        :labels="currentScene.labels.map(l => l._id)"
         :name="currentScene.name"
-        :actors="currentScene.actors.map(a => a.id)"
-        :scene="currentScene.id"
+        :actors="currentScene.actors.map(a => a._id)"
+        :scene="currentScene._id"
         @update-state="isUploading = $event"
         @uploaded="images.unshift($event)"
       />
@@ -370,8 +370,9 @@ export default class SceneDetails extends Vue {
           $name: String
           $crop: Crop
           $actors: [String!]
+          $labels: [String!]
         ) {
-          uploadImage(file: $file, name: $name, crop: $crop, actors: $actors) {
+          uploadImage(file: $file, name: $name, crop: $crop, actors: $actors, labels: $labels) {
             ...ImageFragment
           }
         }
@@ -386,13 +387,14 @@ export default class SceneDetails extends Vue {
           width: this.crop.width,
           height: this.crop.height
         },
-        actors: this.currentScene.actors.map(a => a.id)
+        actors: this.currentScene.actors.map(a => a._id),
+        labels: this.currentScene.labels.map(a => a._id)
       }
     })
       .then(res => {
         const image = res.data.uploadImage;
         this.images.unshift(image);
-        this.setAsThumbnail(image.id);
+        this.setAsThumbnail(image._id);
         this.thumbnailDialog = false;
         this.thumbnailDisplay = null;
         this.selectedThumbnail = null;
@@ -414,7 +416,7 @@ export default class SceneDetails extends Vue {
         }
       `,
       variables: {
-        ids: [this.images[index].id]
+        ids: [this.images[index]._id]
       }
     })
       .then(res => {
@@ -447,7 +449,7 @@ export default class SceneDetails extends Vue {
 
   async fetchPage() {
     try {
-      const query = `page:${this.page} sortDir:asc sortBy:addedOn scene:${this.currentScene.id}`;
+      const query = `page:${this.page} sortDir:asc sortBy:addedOn scene:${this.currentScene._id}`;
 
       const result = await ApolloClient.query({
         query: gql`
@@ -491,13 +493,13 @@ export default class SceneDetails extends Vue {
         mutation($ids: [String!]!, $opts: SceneUpdateOpts!) {
           updateScenes(ids: $ids, opts: $opts) {
             thumbnail {
-              id
+              _id
             }
           }
         }
       `,
       variables: {
-        ids: [this.currentScene.id],
+        ids: [this.currentScene._id],
         opts: {
           thumbnail: id
         }
@@ -518,7 +520,7 @@ export default class SceneDetails extends Vue {
         mutation($ids: [String!]!, $opts: SceneUpdateOpts!) {
           updateScenes(ids: $ids, opts: $opts) {
             labels {
-              id
+              _id
               name
               aliases
             }
@@ -526,9 +528,9 @@ export default class SceneDetails extends Vue {
         }
       `,
       variables: {
-        ids: [this.currentScene.id],
+        ids: [this.currentScene._id],
         opts: {
-          labels: this.selectedLabels.map(i => this.allLabels[i]).map(l => l.id)
+          labels: this.selectedLabels.map(i => this.allLabels[i]).map(l => l._id)
         }
       }
     })
@@ -550,7 +552,7 @@ export default class SceneDetails extends Vue {
         query: gql`
           {
             getLabels {
-              id
+              _id
               name
               aliases
             }
@@ -560,7 +562,7 @@ export default class SceneDetails extends Vue {
         .then(res => {
           this.allLabels = res.data.getLabels;
           this.selectedLabels = this.currentScene.labels.map(l =>
-            this.allLabels.findIndex(k => k.id == l.id)
+            this.allLabels.findIndex(k => k._id == l._id)
           );
           this.labelSelectorDialog = true;
         })
@@ -588,7 +590,7 @@ export default class SceneDetails extends Vue {
   }
 
   imageLink(image: any) {
-    return `${serverBase}/image/${image.id}?password=${localStorage.getItem(
+    return `${serverBase}/image/${image._id}?password=${localStorage.getItem(
       "password"
     )}`;
   }
@@ -605,7 +607,7 @@ export default class SceneDetails extends Vue {
         }
       `,
       variables: {
-        ids: [this.currentScene.id],
+        ids: [this.currentScene._id],
         opts: {
           rating
         }
@@ -616,7 +618,7 @@ export default class SceneDetails extends Vue {
   }
 
   rateActor(id: any, rating: number) {
-    const index = this.actors.findIndex(sc => sc.id == id);
+    const index = this.actors.findIndex(sc => sc._id == id);
 
     if (index > -1) {
       const actor = this.actors[index];
@@ -626,7 +628,7 @@ export default class SceneDetails extends Vue {
   }
 
   favoriteActor(id: any, favorite: boolean) {
-    const index = this.actors.findIndex(sc => sc.id == id);
+    const index = this.actors.findIndex(sc => sc._id == id);
 
     if (index > -1) {
       const actor = this.actors[index];
@@ -636,7 +638,7 @@ export default class SceneDetails extends Vue {
   }
 
   bookmarkActor(id: any, bookmark: boolean) {
-    const index = this.actors.findIndex(sc => sc.id == id);
+    const index = this.actors.findIndex(sc => sc._id == id);
 
     if (index > -1) {
       const actor = this.actors[index];
@@ -652,7 +654,7 @@ export default class SceneDetails extends Vue {
   get thumbnail() {
     if (this.currentScene.thumbnail)
       return `${serverBase}/image/${
-        this.currentScene.thumbnail.id
+        this.currentScene.thumbnail._id
       }?password=${localStorage.getItem("password")}`;
     return "";
   }

@@ -2,10 +2,10 @@ import gql from "graphql-tag";
 
 export default gql`
   fragment ImageFragment on Image {
-    id
+    _id
     name
     labels {
-      id
+      _id
       name
     }
     bookmark

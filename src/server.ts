@@ -38,8 +38,8 @@ export default () => {
     res.sendFile(file);
   });
 
-  app.use("/scene/:scene", (req, res, next) => {
-    const scene = Scene.getById(req.params.scene);
+  app.use("/scene/:scene", async (req, res, next) => {
+    const scene = await Scene.getById(req.params.scene);
 
     if (scene && scene.path) {
       Scene.watch(scene);
@@ -47,8 +47,8 @@ export default () => {
     } else next(404);
   });
 
-  app.use("/image/:image", (req, res, next) => {
-    const image = Image.getById(req.params.image);
+  app.use("/image/:image", async (req, res, next) => {
+    const image = await Image.getById(req.params.image);
 
     if (image && image.path) res.sendFile(libraryPath(image.path));
     else next(404);

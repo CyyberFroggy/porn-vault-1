@@ -1,4 +1,4 @@
-import { database } from "../../database";
+import * as database from "../../database";
 import Actor from "../../types/actor";
 import Label from "../../types/label";
 import {
@@ -33,25 +33,25 @@ type ISceneUpdateOpts = Partial<{
 }>;
 
 export default {
-  watchScene(_, { id }: { id: string }) {
-    const scene = Scene.getById(id);
+  async watchScene(_, { id }: { id: string }) {
+    const scene = await Scene.getById(id);
 
     if (scene) {
-      Scene.watch(scene);
+      await Scene.watch(scene);
       return scene;
     }
     return null;
   },
 
-  addScene(_, args: Dictionary<any>) {
+  async addScene(_, args: Dictionary<any>) {
     for (const actor of args.actors || []) {
-      const actorInDb = Actor.getById(actor);
+      const actorInDb = await Actor.getById(actor);
 
       if (!actorInDb) throw new Error(`Actor ${actor} not found`);
     }
 
     for (const label of args.labels || []) {
-      const labelInDb = Label.getById(label);
+      const labelInDb = await Label.getById(label);
 
       if (!labelInDb) throw new Error(`Label ${label} not found`);
     }
@@ -64,7 +64,7 @@ export default {
     }
 
     // Extract actors
-    const extractedActors = extractActors(scene.name);
+    const extractedActors = await extractActors(scene.name);
     logger.log(`Found ${extractedActors.length} actors in scene title.`);
     scene.actors.push(...extractedActors);
     scene.actors = [...new Set(scene.actors)];
@@ -74,16 +74,12 @@ export default {
     }
 
     // Extract labels
-    const extractedLabels = extractLabels(scene.name);
+    const extractedLabels = await extractLabels(scene.name);
     logger.log(`Found ${extractedLabels.length} labels in scene title.`);
     scene.labels.push(...extractedLabels);
     scene.labels = [...new Set(scene.labels)];
 
-    database
-      .get("scenes")
-      .push(scene)
-      .write();
-
+    await database.insert(database.store.scenes, scene);
     logger.success(`Scene '${sceneName}' done.`);
     return scene;
   },
@@ -92,13 +88,13 @@ export default {
     logger.log(`Receiving scene...`);
 
     for (const actor of args.actors || []) {
-      const actorInDb = Actor.getById(actor);
+      const actorInDb = await Actor.getById(actor);
 
       if (!actorInDb) throw new Error(`Actor ${actor} not found`);
     }
 
     for (const label of args.labels || []) {
-      const labelInDb = Label.getById(label);
+      const labelInDb = await Label.getById(label);
 
       if (!labelInDb) throw new Error(`Label ${label} not found`);
     }
@@ -138,7 +134,7 @@ export default {
 
     const scene = new Scene(sceneName);
 
-    const sourcePath = `scenes/${scene.id}${ext}`;
+    const sourcePath = `scenes/${scene._id}${ext}`;
     scene.path = sourcePath;
 
     logger.log(`Getting file...`);
@@ -209,10 +205,10 @@ export default {
     }
 
     // Extract actors
-    const extractedActors = extractActors(scene.name);
+    const extractedActors = await extractActors(scene.name);
 
     let extractedActorsFromFileName = [] as string[];
-    if (args.name) extractedActorsFromFileName = extractActors(filename);
+    if (args.name) extractedActorsFromFileName = await extractActors(filename);
 
     scene.actors.push(...extractedActors);
     scene.actors.push(...extractedActorsFromFileName);
@@ -224,10 +220,10 @@ export default {
     }
 
     // Extract labels
-    const extractedLabels = extractLabels(scene.name);
+    const extractedLabels = await extractLabels(scene.name);
 
     let extractedLabelsFromFileName = [] as string[];
-    if (args.name) extractedLabelsFromFileName = extractLabels(filename);
+    if (args.name) extractedLabelsFromFileName = await extractLabels(filename);
 
     scene.labels.push(...extractedLabels);
     scene.labels.push(...extractedLabelsFromFileName);
@@ -246,14 +242,11 @@ export default {
           const file = thumbnailFiles[i];
           const image = new Image(`${sceneName} ${i + 1}`);
           image.path = file.path;
-          image.scene = scene.id;
+          image.scene = scene._id;
           image.meta.size = file.size;
           image.actors = scene.actors;
           image.labels = scene.labels;
-          database
-            .get("images")
-            .push(image)
-            .write();
+          await database.insert(database.store.images, image);
           images.push(image);
         }
       } catch (error) {
@@ -261,47 +254,42 @@ export default {
         throw error;
       }
 
-      scene.thumbnail = images[Math.floor(images.length / 2)].id;
+      scene.thumbnail = images[Math.floor(images.length / 2)]._id;
       loader.succeed(`Created ${thumbnailFiles.length} thumbnails.`);
     }
 
-    database
-      .get("scenes")
-      .push(scene)
-      .write();
-
     // Done
 
+    await database.insert(database.store.scenes, scene);
     logger.success(`Scene '${sceneName}' done.`);
-
     return scene;
   },
 
-  addActorsToScene(_, { id, actors }: { id: string; actors: string[] }) {
-    const scene = Scene.getById(id);
+  async addActorsToScene(_, { id, actors }: { id: string; actors: string[] }) {
+    const scene = await Scene.getById(id);
 
     if (scene) {
       if (Array.isArray(actors)) scene.actors.push(...actors);
-
       scene.actors = [...new Set(scene.actors)];
-
-      database
-        .get("scenes")
-        .find({ id: scene.id })
-        .assign(scene)
-        .write();
-
+      await database.update(
+        database.store.scenes,
+        { _id: scene._id },
+        { $set: { actors: scene.actors } }
+      );
       return scene;
     } else {
       throw new Error(`Scene ${id} not found`);
     }
   },
 
-  updateScenes(_, { ids, opts }: { ids: string[]; opts: ISceneUpdateOpts }) {
+  async updateScenes(
+    _,
+    { ids, opts }: { ids: string[]; opts: ISceneUpdateOpts }
+  ) {
     const updatedScenes = [] as Scene[];
 
     for (const id of ids) {
-      const scene = Scene.getById(id);
+      const scene = await Scene.getById(id);
 
       if (scene) {
         if (typeof opts.name == "string") scene.name = opts.name;
@@ -327,12 +315,7 @@ export default {
         if (typeof opts.releaseDate == "number")
           scene.releaseDate = opts.releaseDate;
 
-        database
-          .get("scenes")
-          .find({ id: scene.id })
-          .assign(scene)
-          .write();
-
+        await database.update(database.store.scenes, { _id: scene._id }, scene);
         updatedScenes.push(scene);
       }
     }
@@ -340,18 +323,18 @@ export default {
     return updatedScenes;
   },
 
-  removeScenes(_, { ids }: { ids: string[] }) {
+  async removeScenes(_, { ids }: { ids: string[] }) {
     for (const id of ids) {
-      const scene = Scene.getById(id);
+      const scene = await Scene.getById(id);
 
       if (scene) {
-        Scene.remove(scene.id);
+        await Scene.remove(scene._id);
 
-        Image.filterScene(scene.id);
-        Movie.filterScene(scene.id);
+        await Image.filterScene(scene._id);
+        await Movie.filterScene(scene._id);
 
-        return true;
       }
     }
+    return true;
   }
 };

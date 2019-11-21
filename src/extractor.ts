@@ -2,33 +2,35 @@ import Label from "./types/label";
 import Actor from "./types/actor";
 
 // Returns IDs of extracted labels
-export function extractLabels(str: string): string[] {
+export async function extractLabels(str: string) {
   str = str.toLowerCase();
   const foundLabels = [] as string[];
-  Label.getAll()
-    .forEach(label => {
-      if (str.includes(label.name.toLowerCase())) {
-        foundLabels.push(label.id);
-      }
-      else if (label.aliases.some(alias => str.includes(alias.toLowerCase()))) {
-        foundLabels.push(label.id);
-      }
-    })
+
+  const allLabels = await Label.getAll();
+
+  allLabels.forEach(label => {
+    if (str.includes(label.name.toLowerCase())) {
+      foundLabels.push(label._id);
+    } else if (label.aliases.some(alias => str.includes(alias.toLowerCase()))) {
+      foundLabels.push(label._id);
+    }
+  });
   return foundLabels;
 }
 
 // Returns IDs of extracted actors
-export function extractActors(str: string): string[] {
+export async function extractActors(str: string) {
   str = str.toLowerCase();
   const foundActors = [] as string[];
-  Actor.getAll()
-    .forEach(actor => {
-      if (str.includes(actor.name.toLowerCase())) {
-        foundActors.push(actor.id);
-      }
-      else if (actor.aliases.some(alias => str.includes(alias.toLowerCase()))) {
-        foundActors.push(actor.id);
-      }
-    })
+
+  const allActors = await Actor.getAll();
+
+  allActors.forEach(actor => {
+    if (str.includes(actor.name.toLowerCase())) {
+      foundActors.push(actor._id);
+    } else if (actor.aliases.some(alias => str.includes(alias.toLowerCase()))) {
+      foundActors.push(actor._id);
+    }
+  });
   return foundActors;
 }

@@ -48,8 +48,8 @@
     "inquirer": "6.3.1",
     "jimp": "^0.8.5",
     "js-sha512": "^0.8.0",
-    "lowdb": "^1.0.0",
     "mkdirp": "^0.5.1",
+    "nedb": "^1.8.0",
     "ora": "^4.0.3",
     "pug": "^2.0.4",
     "tiny-async-pool": "^1.0.4"
@@ -59,8 +59,8 @@
     "@types/express": "^4.17.2",
     "@types/fluent-ffmpeg": "^2.1.11",
     "@types/inquirer": "^6.5.0",
-    "@types/lowdb": "^1.0.9",
     "@types/mkdirp": "^0.5.2",
+    "@types/nedb": "^1.8.9",
     "@types/pug": "^2.0.4",
     "nodemon": "^1.19.4",
     "pkg": "^4.4.0"
