@@ -69,7 +69,7 @@
   },
   "nodemonConfig": {
     "ignore": [
-      "/**/db.json",
+      "/**/*.db",
       "/**/config.json"
     ]
   }
