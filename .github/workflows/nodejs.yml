@@ -24,8 +24,7 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/')
       with:
         files: |
-          releases/linux.zip
-          releases/mac.zip
-          releases/win64.zip
+          releases/lin
+          releases/win.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
