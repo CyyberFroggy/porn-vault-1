@@ -2,17 +2,18 @@
 
 ## Project setup
 ```
-npm run init
+npm install
 ```
 
-## Development mode
+### Compiles and hot-reloads for development
 ```
-npm run electron:serve
-```
-
-## Build app
-```
-npm run electron:build
+npm run serve
 ```
 
-Built app can be found in build/ folder.
+### Compiles and minifies for production
+```
+npm run build
+```
+
+### Customize configuration
+See [Configuration Reference](https://cli.vuejs.org/config/).

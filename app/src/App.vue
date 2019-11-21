@@ -1,163 +1,128 @@
 <template>
-  <v-app :dark="$vuetify.theme.dark">
-    <v-app-bar
-      clipped-right
-      dense
-      style="-webkit-app-region: drag;"
-      dark
-      :color="$store.getters['globals/primaryColor']"
-      app
-    >
-      <v-btn v-for="btn in toolbarItems" :key="btn.label" class="mr-2" text :to="btn.to">
-        <span>{{ btn.label }}</span>
+  <v-app>
+    <v-app-bar clipped-left elevate-on-scroll app color="primary">
+      <v-app-bar-nav-icon @click="navDrawer = true" v-if="$vuetify.breakpoint.xsOnly"></v-app-bar-nav-icon>
+
+      <span v-else>
+        <v-btn v-for="item in navItems" :key="item.icon" class="mr-2 text-none" text :to="item.url">
+          <v-icon left>{{ item.icon }}</v-icon>
+          {{ item.text }}
+        </v-btn>
+      </span>
+
+      <v-spacer></v-spacer>
+
+      <v-btn v-if="$vuetify.breakpoint.smAndDown" icon @click="filterDrawer = !filterDrawer">
+        <v-icon>mdi-filter</v-icon>
       </v-btn>
 
-      <template v-slot:extension>
-        <VideoDetailsActions v-if="$route.name == 'video'" />
-        <ActorDetailsActions v-else-if="$route.name == 'actor'" />
+      <template
+        v-slot:extension
+        v-if="$route.name == 'scene-details' || $route.name == 'actor-details'"
+      >
+        <scene-details-bar v-if="$route.name == 'scene-details'" />
+        <actor-details-bar v-if="$route.name == 'actor-details'" />
       </template>
-    
     </v-app-bar>
 
+    <v-navigation-drawer temporary app v-model="navDrawer">
+      <v-list nav>
+        <v-list-item :to="item.url" v-for="item in navItems" :key="item.icon">
+          <v-list-item-icon>
+            <v-icon>{{ item.icon }}</v-icon>
+          </v-list-item-icon>
+
+          <v-list-item-content>{{ item.text }}</v-list-item-content>
+        </v-list-item>
+      </v-list>
+    </v-navigation-drawer>
+
     <v-content>
-      <router-view />
+      <v-container>
+        <router-view />
+      </v-container>
     </v-content>
   </v-app>
 </template>
 
 <script lang="ts">
-import Vue from "vue";
-import Component from "vue-class-component";
-import * as library from "@/util/library";
-import { remote } from "electron";
-const { shell } = require("electron");
-import VideoDetailsActions from "@/components/VideoDetailsActions.vue";
-import ActorDetailsActions from "@/components/ActorDetailsActions.vue";
-import GlobalsModule from "@/store_modules/globals";
-
-// DEBUG RIGHT-CLICK
-let rightClickPosition = null as null | { x: number; y: number };
-const menu = new remote.Menu();
-const menuItem = new remote.MenuItem({
-  label: "Inspect Element",
-  click: () => {
-    remote
-      .getCurrentWindow()
-      .webContents.inspectElement(rightClickPosition.x, rightClickPosition.y);
-  }
-});
-menu.append(menuItem);
-
-window.addEventListener(
-  "contextmenu",
-  e => {
-    e.preventDefault();
-    rightClickPosition = { x: e.x, y: e.y };
-    menu.popup({ window: remote.getCurrentWindow() });
-  },
-  false
-);
+import { Component, Vue } from "vue-property-decorator";
+import { sceneModule } from "./store/scene";
+import { actorModule } from "./store/actor";
+import { serverBase } from "./apollo";
+import SceneDetailsBar from "./components/AppBar/SceneDetails.vue";
+import ActorDetailsBar from "./components/AppBar/ActorDetails.vue";
+import { contextModule } from "./store/context";
 
 @Component({
   components: {
-    VideoDetailsActions,
-    ActorDetailsActions,
+    SceneDetailsBar,
+    ActorDetailsBar
   }
 })
 export default class App extends Vue {
-  toolbarItems = [
-    /*{
-      to: "/",
-      label: "Home"
-    },*/
+  navDrawer = false;
+
+  get filterDrawer() {
+    return contextModule.showFilters;
+  }
+
+  set filterDrawer(val: boolean) {
+    contextModule.toggleFilters(val);
+  }
+
+  beforeCreate() {
+    if ((<any>this).$route.query.password) {
+      localStorage.setItem("password", (<any>this).$route.query.password);
+    }
+  }
+
+  navItems = [
     {
-      to: "/videos",
-      label: "Videos"
+      icon: "mdi-camcorder-box",
+      text: "Scenes",
+      url: "/scenes"
     },
     {
-      to: "/actors",
-      label: "Actors"
+      icon: "mdi-account-multiple",
+      text: "Actors",
+      url: "/actors"
     },
     {
-      to: "/images",
-      label: "Images"
+      icon: "mdi-label",
+      text: "Labels",
+      url: "/labels"
     },
     {
-      to: "/settings",
-      label: "Settings"
+      icon: "mdi-image",
+      text: "Images",
+      url: "/images"
+    },
+    {
+      icon: "mdi-information",
+      text: "About",
+      url: "/about"
     }
   ];
-
-  minimize() {
-    remote.BrowserWindow.getFocusedWindow().minimize();
-  }
-
-  maximize() {
-    remote.BrowserWindow.getFocusedWindow().isMaximized()
-      ? remote.BrowserWindow.getFocusedWindow().unmaximize()
-      : remote.BrowserWindow.getFocusedWindow().maximize();
-  }
-
-  async beforeMount() {
-    await library.loadFromDisk();
-    this.$vuetify.theme.dark = GlobalsModule.darkMode;
-  }
 }
 </script>
 
 <style lang="scss">
-.clickable {
-  cursor: pointer;
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s;
 }
-/* width */
-::-webkit-scrollbar {
-  width: 12px;
-}
-
-/* Track */
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
+.fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
+  opacity: 0;
 }
 
-/* Handle */
-::-webkit-scrollbar-thumb {
-  background: #888;
-}
-
-/* Handle on hover */
-::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-.sec--text {
-  opacity: 0.6;
-}
-
-.fixed {
-  position: fixed;
-}
-
-.fill {
-  width: 100%;
-  height: 100%;
-
-  &.fixed {
-    left: 0;
-    top: 0;
+.hover {
+  &:hover {
+    cursor: pointer;
   }
 }
 
-.center {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.fixed-center {
-  position: fixed;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+.med--text {
+  opacity: 0.6;
 }
 </style>

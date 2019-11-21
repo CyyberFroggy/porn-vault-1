@@ -1,0 +1,75 @@
+{
+  "name": "porn-manager",
+  "version": "1.0.0",
+  "description": "",
+  "main": "build/index.js",
+  "bin": "build/index.js",
+  "scripts": {
+    "watch": "tsc -w",
+    "mon": "NODE_ENV=development DEBUG=log,sucess,warn,error,http nodemon build/",
+    "dev": "NODE_ENV=development DEBUG=log,success,warn,error,http node build/",
+    "test": "exit 1",
+    "build": "npm run build:server && npm run build:app && cp -r ./app/dist ./release/app",
+    "build:app": "cd app && npm run build && cd ..",
+    "build:server": "tsc && pkg . --targets node10 --out-path ./release",
+    "build:all": "npm run build:app && npm run build:linux && npm run build:win && npm run build:mac",
+    "build:linux": "pkg . --out-path ./releases/linux --targets node10-linux-x64 && cp -r ./app/dist ./releases/linux/app && npm run zip:linux",
+    "build:win": "pkg . --out-path ./releases/win --targets node10-win-x64 && cp -r ./app/dist ./releases/win/app && npm run zip:win",
+    "build:mac": "pkg . --out-path ./releases/mac --targets node10-macos-x64 && cp -r ./app/dist ./releases/mac/app && npm run zip:mac",
+    "zip:linux": "zip -r ./releases/linux.zip ./releases/linux",
+    "zip:win": "zip -r ./releases/win.zip ./releases/win",
+    "zip:mac": "zip -r ./releases/mac.zip ./releases/mac"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/boi123212321/porn-manager.git"
+  },
+  "author": "boi123212321",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/boi123212321/porn-manager/issues"
+  },
+  "homepage": "https://github.com/boi123212321/porn-manager#readme",
+  "dependencies": {
+    "@types/cli-progress": "^1.8.1",
+    "@types/graphql": "^14.5.0",
+    "@types/node": "^12.12.7",
+    "apollo-server-express": "^2.9.8",
+    "axios": "^0.19.0",
+    "chalk": "^2.4.2",
+    "cli-progress": "^3.3.1",
+    "cors": "^2.8.5",
+    "debug": "^4.1.1",
+    "express": "^4.17.1",
+    "fluent-ffmpeg": "^2.1.2",
+    "fuse.js": "^3.4.5",
+    "graphql-tools": "^4.0.6",
+    "graphql-type-long": "^0.1.1",
+    "inquirer": "6.3.1",
+    "jimp": "^0.8.5",
+    "js-sha512": "^0.8.0",
+    "mkdirp": "^0.5.1",
+    "nedb": "^1.8.0",
+    "ora": "^4.0.3",
+    "pug": "^2.0.4",
+    "tiny-async-pool": "^1.0.4"
+  },
+  "devDependencies": {
+    "@types/debug": "^4.1.5",
+    "@types/express": "^4.17.2",
+    "@types/fluent-ffmpeg": "^2.1.11",
+    "@types/inquirer": "^6.5.0",
+    "@types/mkdirp": "^0.5.2",
+    "@types/nedb": "^1.8.9",
+    "@types/pug": "^2.0.4",
+    "@types/tiny-async-pool": "^1.0.0",
+    "nodemon": "^1.19.4",
+    "pkg": "^4.4.0"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "/**/db.json",
+      "/**/config.json"
+    ]
+  }
+}

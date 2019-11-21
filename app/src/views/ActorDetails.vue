@@ -1,149 +1,220 @@
 <template>
   <div>
-    <v-container>
-      <v-layout wrap>
-        <v-flex xs6 sm4 md3 lg2>
-          <v-hover v-slot:default="{ hover }">
-            <v-img
-              v-if="actor.thumbnails.length"
-              class="clickable"
-              v-ripple
-              :aspect-ratio="1"
-              :src="thumbnails[actor.coverIndex]"
-              contain
-              @click="openFileInput"
-            >
-              <transition name="fade">
-                <v-sheet
-                  :color="$store.getters['globals/secondaryColor']"
-                  dark
-                  v-if="hover"
-                  class="fill sec--text"
+    <div v-if="currentActor">
+      <v-row>
+        <v-col cols="12" sm="4" md="4" lg="3" xl="2">
+          <v-container>
+            <v-hover>
+              <template v-slot:default="{ hover }">
+                <v-img
+                  v-ripple
+                  @click="openThumbnailDialog"
+                  class="elevation-4 hover"
+                  aspect-ratio="1"
+                  cover
+                  :src="thumbnail"
                 >
-                  <v-icon x-large class="center">mdi-upload</v-icon>
-                </v-sheet>
-              </transition>
-            </v-img>
-            <v-img
-              @click="openFileInput"
-              v-else
-              class="elevation-6 clickable"
-              :aspect-ratio="1"
-              src
-              style="background: grey"
-            >
-              <transition name="fade">
-                <v-sheet
-                  :color="$store.getters['globals/secondaryColor']"
-                  dark
-                  v-if="hover"
-                  class="fill sec--text"
-                >
-                  <v-icon x-large class="center">mdi-upload</v-icon>
-                </v-sheet>
-              </transition>
-            </v-img>
-          </v-hover>
-
-          <input accept="image/*" multiple style="display:none" type="file" :data-id="actor.id" />
-        </v-flex>
-        <v-flex xs6 sm8 md9 lg10>
-          <v-container fluid fill-height>
-            <div class="fill">
-              <v-rating
-                background-color="grey"
-                color="amber"
-                dense
-                :value="actor.rating"
-                @input="rateActor($event)"
-                clearable
-              ></v-rating>
-
-              <div class="mt-4 mb-1">
-                <v-icon class="mr-1" style="vertical-align: bottom">mdi-label</v-icon>
-                <span class="body-2">Labels</span>
-              </div>
-              <div class="mt-1">
-                <v-chip class="mr-1 mb-1" small v-for="label in labels" :key="label">{{ label }}</v-chip>
-                <v-chip
-                  :color="$store.getters['globals/secondaryColor']"
-                  small
-                  @click="openLabelDialog"
-                >+ Add</v-chip>
-              </div>
-
-              <div class="mt-3">
-                <p class="mb-0">{{ watches.length }} {{ watches.length == 1 ? 'view' : 'views' }}</p>
-                <p
-                  class="sec--text"
-                  v-if="watches.length"
-                >Last view: {{ new Date(watches.slice(-1)[0]).toLocaleString() }}</p>
-              </div>
-
-              <v-container fluid>
-                <v-layout row wrap align-center v-for="field in customFields" :key="field[0]">
-                  <v-flex xs12 sm6>
-                    <v-subheader>{{ field[0] }}</v-subheader>
-                  </v-flex>
-                  <v-flex xs12 sm6>{{ Array.isArray(field[1]) ? field[1].join(", ") : field[1] }}</v-flex>
-                </v-layout>
-              </v-container>
-            </div>
+                  <v-fade-transition>
+                    <v-overlay v-if="hover" absolute color="accent">
+                      <v-icon x-large>mdi-upload</v-icon>
+                    </v-overlay>
+                  </v-fade-transition>
+                </v-img>
+              </template>
+            </v-hover>
           </v-container>
-        </v-flex>
+        </v-col>
+        <v-col cols="12" sm="8" md="8" lg="9" xl="10">
+          <div v-if="currentActor.bornOn">
+            <div class="d-flex align-center">
+              <v-icon>mdi-calendar</v-icon>
+              <v-subheader>Birthday</v-subheader>
+            </div>
+            <div class="med--text pa-2">{{ bornOn }}</div>
+          </div>
 
-        <v-flex class="py-5" xs12 v-if="videos.length">
-          <p class="text-center title font-weight-regular">Scenes</p>
-          <v-layout wrap>
-            <v-flex v-for="video in videos" :key="video.id" xs6 sm4 md4 lg3>
-              <Video :video="video"></Video>
-            </v-flex>
-          </v-layout>
-        </v-flex>
+          <div class="d-flex align-center">
+            <v-icon>mdi-star</v-icon>
+            <v-subheader>Rating</v-subheader>
+          </div>
+          <v-rating
+            half-increments
+            @input="rate"
+            class="pa-2"
+            :value="currentActor.rating / 2"
+            background-color="grey"
+            color="amber"
+            dense
+          ></v-rating>
+          <div class="d-flex align-center">
+            <v-icon>mdi-label</v-icon>
+            <v-subheader>Labels</v-subheader>
+          </div>
+          <div class="pa-2">
+            <v-chip
+              label
+              class="mr-1 mb-1"
+              small
+              outlined
+              v-for="label in labelNames"
+              :key="label"
+            >{{ label }}</v-chip>
+            <v-chip
+              label
+              color="accent"
+              v-ripple
+              @click="openLabelSelector"
+              small
+              class="hover mr-1 mb-1"
+            >+ Add</v-chip>
+          </div>
+        </v-col>
+      </v-row>
+      <v-row v-if="scenes.length">
+        <v-col cols="12">
+          <div class="headline text-center">Scenes</div>
 
-        <v-flex
-          xs12
-          sm10
-          offset-sm1
-          md8
-          offset-md2
-          lg6
-          offset-lg3
-          v-if="actor.thumbnails.length > 1"
-        >
-          <p class="text-center title font-weight-regular">Images</p>
-          <v-checkbox v-model="cycle" label="Auto-cycle images"></v-checkbox>
-          <v-carousel :cycle="cycle" hide-delimiters>
-            <v-carousel-item v-for="(item,i) in thumbnails" :key="i" :src="item">
-              <v-btn @click="setCoverIndex(i)" icon class="thumb-btn">
-                <v-icon>mdi-image</v-icon>
-              </v-btn>
-            </v-carousel-item>
-          </v-carousel>
-        </v-flex>
-      </v-layout>
-    </v-container>
+          <v-row>
+            <v-col v-for="scene in scenes" :key="scene._id" cols="12" sm="6" md="4" lg="3">
+              <scene-card
+                @rate="rateScene(scene._id, $event)"
+                @bookmark="bookmarkScene(scene._id, $event)"
+                @favorite="favoriteScene(scene._id, $event)"
+                :scene="scene"
+              />
+            </v-col>
+          </v-row>
+        </v-col>
+      </v-row>
 
-    <v-dialog v-model="labelDialog" max-width="300px">
-      <v-card>
-        <v-toolbar dark :color="$store.getters['globals/primaryColor']">
-          <v-toolbar-title>Edit labels</v-toolbar-title>
-        </v-toolbar>
-        <v-container>
-          <v-combobox
-            v-model="editing.chosenLabels"
-            :items="allActorLabels"
-            label="Add or choose labels"
-            multiple
-            chips
-            clearable
-            :color="$store.getters['globals/secondaryColor']"
-          ></v-combobox>
+      <div v-if="images.length">
+        <div class="d-flex align-center">
+          <v-spacer></v-spacer>
+          <h1 class="font-weight-light mr-3">Images</h1>
+          <v-btn @click="openUploadDialog" icon>
+            <v-icon>mdi-cloud-upload</v-icon>
+          </v-btn>
+          <v-spacer></v-spacer>
+        </div>
+        <v-container fluid>
+          <v-row>
+            <v-col v-for="(image, index) in images" :key="image._id" cols="6" sm="4">
+              <ImageCard @open="lightboxIndex = index" width="100%" height="100%" :image="image">
+                <template v-slot:action>
+                  <v-tooltip top>
+                    <template v-slot:activator="{ on }">
+                      <v-btn
+                        v-on="on"
+                        @click.native.stop="setAsThumbnail(image._id)"
+                        class="elevation-2 mb-2"
+                        icon
+                        style="background: #fafafa;"
+                      >
+                        <v-icon>mdi-image</v-icon>
+                      </v-btn>
+                    </template>
+                    <span>Set as actor thumbnail</span>
+                  </v-tooltip>
+                </template>
+              </ImageCard>
+            </v-col>
+          </v-row>
+
+          <transition name="fade">
+            <Lightbox
+              @delete="removeImage"
+              @update="updateImage"
+              :items="images"
+              :index="lightboxIndex"
+              @index="lightboxIndex = $event"
+            />
+          </transition>
         </v-container>
+      </div>
+    </div>
+    <div v-else class="text-center">
+      <p>Loading...</p>
+      <v-progress-circular indeterminate></v-progress-circular>
+    </div>
+
+    <v-dialog scrollable v-model="labelSelectorDialog" max-width="400px">
+      <v-card :loading="labelEditLoader" v-if="currentActor">
+        <v-card-title>Select labels for '{{ currentActor.name }}'</v-card-title>
+
+        <v-card-text style="max-height: 400px">
+          <LabelSelector :items="allLabels" v-model="selectedLabels" />
+        </v-card-text>
+        <v-divider></v-divider>
+
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn @click="labelDialog = false" text>Cancel</v-btn>
-          <v-btn @click="saveLabels" :color="$store.getters['globals/secondaryColor']">Save</v-btn>
+          <v-btn @click="editLabels" depressed color="primary" class="black--text text-none">Edit</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <infinite-loading v-if="currentActor" :identifier="infiniteId" @infinite="infiniteHandler">
+      <div slot="no-results">
+        <v-icon large>mdi-close</v-icon>
+        <div>Nothing found!</div>
+      </div>
+
+      <div slot="spinner">
+        <v-progress-circular indeterminate></v-progress-circular>
+        <div>Loading...</div>
+      </div>
+
+      <div slot="no-more">
+        <v-icon large>mdi-emoticon-wink</v-icon>
+        <div>That's all!</div>
+      </div>
+    </infinite-loading>
+
+    <v-dialog
+      v-if="currentActor"
+      :persistent="isUploading"
+      scrollable
+      v-model="uploadDialog"
+      max-width="400px"
+    >
+      <ImageUploader
+        :labels="currentActor.labels.map(l => l._id)"
+        :name="currentActor.name"
+        :actors="[currentActor._id]"
+        @update-state="isUploading = $event"
+        @uploaded="images.unshift($event)"
+      />
+    </v-dialog>
+
+    <v-dialog v-model="thumbnailDialog" max-width="600px">
+      <v-card v-if="currentActor" :loading="thumbnailLoader">
+        <v-card-title>Set thumbnail for '{{ currentActor.name }}'</v-card-title>
+        <v-card-text>
+          <v-file-input
+            color="accent"
+            placeholder="Select image"
+            @change="readThumbnail"
+            v-model="selectedThumbnail"
+          ></v-file-input>
+          <div v-if="thumbnailDisplay" class="text-center">
+            <cropper
+              style="height: 400px"
+              class="cropper"
+              :src="thumbnailDisplay"
+              :stencilProps="{ aspectRatio: 1 }"
+              @change="changeCrop"
+            ></cropper>
+          </div>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn
+            :disabled="!thumbnailDisplay"
+            class="black--text"
+            color="primary"
+            depressed
+            @click="uploadThumbnail"
+          >Upload</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -151,179 +222,412 @@
 </template>
 
 <script lang="ts">
-import Vue from "vue";
-import Component from "vue-class-component";
-import fs from "fs";
-import path from "path";
-import Actor from "@/classes/actor";
-import Video from "@/classes/video";
-import Image from "@/classes/image";
-import { hash, randomString } from "@/util/generator";
-import VideoComponent from "@/components/Video.vue";
-import { toTitleCase } from "@/util/string";
-import { CustomFieldValue } from "@/classes/common";
-import CustomField from "@/components/CustomField.vue";
-import { exportToDisk } from "@/util/library";
-import ActorsModule from "@/store_modules/actors";
-import ImagesModule from "@/store_modules/images";
-import GlobalsModule from "@/store_modules/globals";
-import VideosModule from "@/store_modules/videos";
+import { Component, Vue } from "vue-property-decorator";
+import ApolloClient, { serverBase } from "../apollo";
+import gql from "graphql-tag";
+import sceneFragment from "../fragments/scene";
+import actorFragment from "../fragments/actor";
+import imageFragment from "../fragments/image";
+import { actorModule } from "../store/actor";
+import SceneCard from "../components/SceneCard.vue";
+import moment from "moment";
+import LabelSelector from "../components/LabelSelector.vue";
+import Lightbox from "../components/Lightbox.vue";
+import ImageCard from "../components/ImageCard.vue";
+import InfiniteLoading from "vue-infinite-loading";
+import { Cropper } from "vue-advanced-cropper";
+import ImageUploader from "../components/ImageUploader.vue";
 
+interface ICropCoordinates {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+interface ICropResult {
+  coordinates: ICropCoordinates;
+}
+
+// @ts-ignore
 @Component({
   components: {
-    Video: VideoComponent,
-    CustomField
+    SceneCard,
+    LabelSelector,
+    Lightbox,
+    ImageCard,
+    InfiniteLoading,
+    Cropper,
+    ImageUploader
+  },
+  beforeRouteLeave(_to, _from, next) {
+    actorModule.setCurrent(null);
+    next();
   }
 })
 export default class ActorDetails extends Vue {
-  cycle = true;
+  scenes = [] as any[];
+  images = [] as any[];
+  lightboxIndex = null as number | null;
 
-  labelDialog = false;
+  labelSelectorDialog = false;
+  allLabels = [] as any[];
+  selectedLabels = [] as any[];
+  labelEditLoader = false;
 
-  editing = {
-    chosenLabels: [] as string[]
-  };
+  infiniteId = 0;
+  page = 0;
 
-  saveLabels() {
-    ActorsModule.setLabels({
-      id: this.actor.id,
-      labels: this.editing.chosenLabels.map((label: string) =>
-        toTitleCase(label)
-      )
+  thumbnailDialog = false;
+  thumbnailLoader = false;
+  thumbnailDisplay = null as string | null;
+  selectedThumbnail = null as File | null;
+  crop: ICropCoordinates = { left: 0, top: 0, width: 0, height: 0 };
+
+  uploadDialog = false;
+  isUploading = false;
+
+  openUploadDialog() {
+    this.uploadDialog = true;
+  }
+
+  changeCrop(crop: ICropResult) {
+    this.crop = {
+      left: Math.round(crop.coordinates.left),
+      top: Math.round(crop.coordinates.top),
+      width: Math.round(crop.coordinates.width),
+      height: Math.round(crop.coordinates.height)
+    };
+  }
+
+  readImage(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (reader.result) resolve(reader.result.toString());
+        else reject("File error");
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
     });
-    this.labelDialog = false;
-
-    exportToDisk();
   }
 
-  openLabelDialog() {
-    this.labelDialog = true;
-    this.editing.chosenLabels = this.actor.labels;
+  async readThumbnail(file: File) {
+    if (file) this.thumbnailDisplay = await this.readImage(file);
   }
 
-  rateActor(rating: number) {
-    ActorsModule.rate({
-      id: this.actor.id,
-      rating
-    });
-    exportToDisk();
-  }
+  uploadThumbnail() {
+    this.thumbnailLoader = true;
 
-  setCoverIndex(index: number) {
-    ActorsModule.setCoverIndex({
-      id: this.actor.id,
-      index
-    });
-    exportToDisk();
-  }
-
-  openFileInput() {
-    let el = document.querySelector(`input[data-id="${this.actor.id}"]`) as any;
-
-    el.addEventListener("change", (ev: Event) => {
-      let fileArray = Array.from(el.files) as File[];
-      let files = fileArray.map(file => {
-        return {
-          name: file.name,
-          path: file.path,
-          size: file.size
-        };
-      }) as { name: string; path: string; size: number }[];
-
-      if (GlobalsModule.copyThumbnails) {
-        if (!fs.existsSync(path.resolve(process.cwd(), "library/images/"))) {
-          fs.mkdirSync(path.resolve(process.cwd(), "library/images/"));
+    ApolloClient.mutate({
+      mutation: gql`
+        mutation(
+          $file: Upload!
+          $name: String
+          $crop: Crop
+          $actors: [String!]
+          $labels: [String!]
+        ) {
+          uploadImage(file: $file, name: $name, crop: $crop, actors: $actors, labels: $labels) {
+            ...ImageFragment
+          }
         }
-
-        files.forEach(file => {
-          let p = file.path;
-          let imagePath = path.resolve(
-            process.cwd(),
-            "library/images/",
-            `image-${this.actor.id}-${randomString(8)}${path.extname(p)}`
-          );
-          fs.copyFileSync(p, imagePath);
-          file.path = imagePath;
-        });
+        ${imageFragment}
+      `,
+      variables: {
+        file: this.selectedThumbnail,
+        name: this.currentActor.name + " (thumbnail)",
+        actors: [this.currentActor._id],
+        labels: this.currentActor.labels.map(a => a._id),
+        crop: {
+          left: this.crop.left,
+          top: this.crop.top,
+          width: this.crop.width,
+          height: this.crop.height
+        }
       }
+    })
+      .then(res => {
+        const image = res.data.uploadImage;
+        this.images.unshift(image);
+        this.setAsThumbnail(image._id);
+        this.thumbnailDialog = false;
+        this.thumbnailDisplay = null;
+        this.selectedThumbnail = null;
+      })
+      .finally(() => {
+        this.thumbnailLoader = false;
+      });
+  }
 
-      let images = files.map(file => Image.create(file));
+  openThumbnailDialog() {
+    this.thumbnailDialog = true;
+  }
 
-      images.forEach(image => {
-        image.actors.push(this.actor.id);
-        image.labels.push(...this.actor.labels);
-        image.customFields = JSON.parse(
-          JSON.stringify(this.actor.customFields)
-        );
+  removeImage(index: number) {
+    ApolloClient.mutate({
+      mutation: gql`
+        mutation($ids: [String!]!) {
+          removeImages(ids: $ids)
+        }
+      `,
+      variables: {
+        ids: [this.images[index]._id]
+      }
+    })
+      .then(res => {
+        this.images.splice(index, 1);
+        this.lightboxIndex = null;
+      })
+      .catch(err => {
+        console.error(err);
+      })
+      .finally(() => {});
+  }
+
+  async fetchPage() {
+    try {
+      const query = `page:${this.page} sortDir:asc sortBy:addedOn actors:${this.currentActor._id}`;
+
+      const result = await ApolloClient.query({
+        query: gql`
+          query($query: String) {
+            getImages(query: $query) {
+              ...ImageFragment
+              actors {
+                ...ActorFragment
+              }
+            }
+          }
+          ${imageFragment}
+          ${actorFragment}
+        `,
+        variables: {
+          query
+        }
       });
 
-      ImagesModule.add(images);
+      return result.data.getImages;
+    } catch (err) {
+      throw err;
+    }
+  }
 
-      if (files.length) {
-        ActorsModule.addThumbnails({
-          id: this.actor.id,
-          images: images.map(i => i.id)
-        });
+  infiniteHandler($state) {
+    this.fetchPage().then(items => {
+      if (items.length) {
+        this.page++;
+        this.images.push(...items);
+        $state.loaded();
+      } else {
+        $state.complete();
       }
-
-      exportToDisk();
-
-      el.value = "";
     });
-    el.click();
   }
 
-  get customFields() {
-    let array = Object.entries(((this.actor as unknown) as Actor).customFields);
-    array = array.filter((a: any) => a[1] !== null);
-    return array;
+  updateImage({
+    index,
+    key,
+    value
+  }: {
+    index: number;
+    key: string;
+    value: any;
+  }) {
+    const images = this.images[index];
+    images[key] = value;
+    Vue.set(this.images, index, images);
   }
 
-  get watches(): number[] {
-    return VideosModule.getActorWatches(this.actor.id);
+  get currentActor() {
+    return actorModule.current;
   }
 
-  get actor(): Actor {
-    return ActorsModule.getById(this.$route.params.id);
+  setAsThumbnail(id: string) {
+    ApolloClient.mutate({
+      mutation: gql`
+        mutation($ids: [String!]!, $opts: ActorUpdateOpts!) {
+          updateActors(ids: $ids, opts: $opts) {
+            thumbnail {
+              _id
+            }
+          }
+        }
+      `,
+      variables: {
+        ids: [this.currentActor._id],
+        opts: {
+          thumbnail: id
+        }
+      }
+    })
+      .then(res => {
+        actorModule.setThumbnail(id);
+      })
+      .catch(err => {
+        console.error(err);
+      });
   }
 
-  get videos(): Video[] {
-    return VideosModule.getByActor(this.actor.id);
+  editLabels() {
+    this.labelEditLoader = true;
+    ApolloClient.mutate({
+      mutation: gql`
+        mutation($ids: [String!]!, $opts: ActorUpdateOpts!) {
+          updateActors(ids: $ids, opts: $opts) {
+            labels {
+              _id
+              name
+              aliases
+            }
+          }
+        }
+      `,
+      variables: {
+        ids: [this.currentActor._id],
+        opts: {
+          labels: this.selectedLabels.map(i => this.allLabels[i]).map(l => l._id)
+        }
+      }
+    })
+      .then(res => {
+        actorModule.setLabels(res.data.updateActors[0].labels);
+        this.labelSelectorDialog = false;
+      })
+      .catch(err => {
+        console.error(err);
+      })
+      .finally(() => {
+        this.labelEditLoader = false;
+      });
   }
 
-  get thumbnails(): string[] {
-    return this.actor.thumbnails.map(id => ImagesModule.getById(id).path);
+  openLabelSelector() {
+    if (!this.allLabels.length) {
+      ApolloClient.query({
+        query: gql`
+          {
+            getLabels {
+              _id
+              name
+              aliases
+            }
+          }
+        `
+      })
+        .then(res => {
+          this.allLabels = res.data.getLabels;
+          this.selectedLabels = this.currentActor.labels.map(l =>
+            this.allLabels.findIndex(k => k._id == l._id)
+          );
+          this.labelSelectorDialog = true;
+        })
+        .catch(err => {
+          console.error(err);
+        });
+    } else {
+      this.labelSelectorDialog = true;
+    }
   }
 
-  get labels(): string[] {
-    return this.actor.labels.slice().sort();
+  imageLink(image: any) {
+    return `${serverBase}/image/${image._id}?password=${localStorage.getItem(
+      "password"
+    )}`;
   }
 
-  get allActorLabels(): string[] {
-    return ActorsModule.getLabels;
+  rate(rating: number) {
+    rating = rating * 2;
+
+    ApolloClient.mutate({
+      mutation: gql`
+        mutation($ids: [String!]!, $opts: ActorUpdateOpts!) {
+          updateActors(ids: $ids, opts: $opts) {
+            rating
+          }
+        }
+      `,
+      variables: {
+        ids: [this.currentActor._id],
+        opts: {
+          rating
+        }
+      }
+    }).then(res => {
+      actorModule.setRating(rating);
+    });
+  }
+
+  get labelNames() {
+    return this.currentActor.labels.map(l => l.name).sort();
+  }
+
+  get thumbnail() {
+    if (this.currentActor.thumbnail)
+      return `${serverBase}/image/${
+        this.currentActor.thumbnail._id
+      }?password=${localStorage.getItem("password")}`;
+    return "";
+  }
+
+  rateScene(id: any, rating: number) {
+    const index = this.scenes.findIndex(sc => sc._id == id);
+
+    if (index > -1) {
+      const actor = this.scenes[index];
+      actor.rating = rating;
+      Vue.set(this.scenes, index, actor);
+    }
+  }
+
+  favoriteScene(id: any, favorite: boolean) {
+    const index = this.scenes.findIndex(sc => sc._id == id);
+
+    if (index > -1) {
+      const actor = this.scenes[index];
+      actor.favorite = favorite;
+      Vue.set(this.scenes, index, actor);
+    }
+  }
+
+  bookmarkScene(id: any, bookmark: boolean) {
+    const index = this.scenes.findIndex(sc => sc._id == id);
+
+    if (index > -1) {
+      const actor = this.scenes[index];
+      actor.bookmark = bookmark;
+      Vue.set(this.scenes, index, actor);
+    }
+  }
+
+  beforeMount() {
+    ApolloClient.query({
+      query: gql`
+        query($id: String!) {
+          getActorById(id: $id) {
+            ...ActorFragment
+            scenes {
+              ...SceneFragment
+              actors {
+                ...ActorFragment
+              }
+            }
+          }
+        }
+        ${actorFragment}
+        ${sceneFragment}
+      `,
+      variables: {
+        id: (<any>this).$route.params.id
+      }
+    }).then(res => {
+      this.scenes = res.data.getActorById.scenes;
+      delete res.data.getActorById.scenes;
+      actorModule.setCurrent(res.data.getActorById);
+    });
   }
 }
 </script>
 
 <style lang="scss" scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.15s;
-}
-.fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
-  opacity: 0;
-}
-
-.thumb-btn {
-  position: absolute;
-  right: 10px;
-  top: 10px;
-  background: rgba(0, 0, 0, 0.5);
-}
-
-.clickable {
-  &:hover {
-    cursor: pointer;
-  }
-}
 </style>

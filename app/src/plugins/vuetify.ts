@@ -1,26 +1,24 @@
-import Vue from 'vue'
-import Vuetify from 'vuetify/lib'
+import Vue from "vue";
+import Vuetify from "vuetify/lib";
+import colors from "vuetify/lib/util/colors";
 
 Vue.use(Vuetify);
 
 export default new Vuetify({
-  icons: {
-    iconfont: "mdi"
-  },
   theme: {
+    options: {
+      customProperties: true
+    },
     themes: {
       light: {
-        primary: '#9F2F4A',
-        secondary: '#b0bec5',
-        accent: '#8c9eff',
-        error: '#b71c1c',
-      },
-      dark: {
-        primary: '#9F2F4A',
-        secondary: '#b0bec5',
-        accent: '#8c9eff',
-        error: '#b71c1c',
+        primary: colors.deepOrange.lighten4,
+        secondary: colors.deepOrange.lighten4,
+        accent: colors.blue.base,
+        error: colors.red.accent3,
+        info: colors.blue.darken2,
+        success: colors.green.base,
+        warning: colors.amber.accent3
       }
-    },
-  },
-})
+    }
+  }
+});

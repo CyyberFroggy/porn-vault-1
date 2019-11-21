@@ -1,518 +1,495 @@
 <template>
-  <v-container>
-    <v-layout wrap>
-      <v-flex xs12 style="display: flex">
-        <v-btn text @click="createDialog = true">
-          <span>Add</span>
-          <v-icon>mdi-add</v-icon>
-        </v-btn>
-        <v-spacer></v-spacer>
-        <v-btn-toggle v-if="$store.state.actors.items.length" class="mr-2" v-model="filterDrawer">
-          <v-btn :value="true" text @click="filterDrawer = !filterDrawer">
-            <span>Filter</span>
-            <v-icon>mdi-filter-variant</v-icon>
-          </v-btn>
-        </v-btn-toggle>
-        <v-btn-toggle v-if="$store.state.actors.items.length" v-model="gridSize" mandatory>
-          <v-btn text :value="0">
-            <v-icon>mdi-view-stream</v-icon>
-          </v-btn>
-          <v-btn text :value="1">
-            <v-icon>mdi-view-module</v-icon>
-          </v-btn>
-        </v-btn-toggle>
-      </v-flex>
-    </v-layout>
+  <div>
+    <v-navigation-drawer v-model="drawer" :permanent="$vuetify.breakpoint.mdAndUp" clipped app>
+      <v-container>
+        <v-text-field clearable color="accent" v-model="query" label="Search query"></v-text-field>
 
-    <v-layout wrap v-if="$store.state.actors.items.length">
-      <v-container fluid>
-        <v-layout wrap v-if="gridSize == 0">
-          <v-flex
-            xs12
-            sm6
-            md6
-            lg4
-            xl3
-            style="max-height: 75vh"
-            v-for="actor in items"
-            :key="actor.id"
-          >
-            <Actor :actor="actor" v-on:open="expand(actor)" />
-          </v-flex>
-        </v-layout>
+        <v-subheader>Labels</v-subheader>
+        <v-chip-group
+          active-class="accent--text"
+          :items="allLabels"
+          column
+          v-model="selectedLabels"
+          multiple
+        >
+          <div style="max-height:40vh; overflow-y:scroll">
+            <v-chip label small v-for="label in allLabels" :key="label._id">{{ label.name }}</v-chip>
+          </div>
+        </v-chip-group>
+        <v-select
+          hide-details
+          color="accent"
+          item-text="text"
+          item-value="value"
+          v-model="sortBy"
+          placeholder="Sort by..."
+          :items="sortByItems"
+        ></v-select>
+        <v-select
+          :disabled="sortBy == 'relevance'"
+          hide-details
+          color="accent"
+          item-text="text"
+          item-value="value"
+          v-model="sortDir"
+          placeholder="Sort direction"
+          :items="sortDirItems"
+        ></v-select>
+        <v-checkbox hide-details v-model="favoritesOnly" label="Show favorites only"></v-checkbox>
+        <v-checkbox hide-details v-model="bookmarksOnly" label="Show bookmarks only"></v-checkbox>
 
-        <v-layout wrap v-if="gridSize == 1">
-          <v-flex
-            xs6
-            sm3
-            md3
-            lg2
-            xl1
-            style="max-height: 75vh"
-            v-for="actor in items"
-            :key="actor.id"
-          >
-            <Actor :actor="actor" v-on:open="expand(actor)" />
-          </v-flex>
-        </v-layout>
+        <v-rating
+          half-increments
+          @input="ratingFilter = $event * 2"
+          :value="ratingFilter / 2"
+          class="pb-0 pa-2"
+          background-color="grey"
+          color="amber"
+          dense
+          hide-details
+        ></v-rating>
+        <div class="pl-3 mt-1 med--text caption hover" @click="ratingFilter = 0">Reset rating filter</div>
       </v-container>
-    </v-layout>
-
-    <v-navigation-drawer
-      class="px-3 pt-1"
-      v-model="filterDrawer"
-      app
-      right
-      clipped
-      :permanent="filterDrawer"
-      disable-resize-watcher
-      hide-overlay
-      clearable
-    >
-      <v-layout wrap>
-        <v-flex xs12>
-          <v-text-field v-model="search" single-line label="Search..." clearable></v-text-field>
-        </v-flex>
-
-        <v-flex xs12 class="mt-3">
-          <v-divider></v-divider>
-          <v-subheader>Sort</v-subheader>
-          <v-select
-            :items="sortModes"
-            single-line
-            v-model="chosenSort"
-            item-text="name"
-            item-value="value"
-          ></v-select>
-        </v-flex>
-
-        <v-flex xs12 class="mt-2">
-          <v-divider></v-divider>
-          <v-subheader>Filter</v-subheader>
-          <v-autocomplete
-            clearable
-            v-model="chosenLabels"
-            multiple
-            chips
-            hide-details
-            single-line
-            :items="labels"
-            label="Select labels..."
-          ></v-autocomplete>
-        </v-flex>
-        <v-flex xs12 class="mt-3">
-          Filter by rating
-          <v-rating
-            background-color="grey"
-            color="amber"
-            dense
-            :value="ratingFilter"
-            @input="setRatingFilter($event)"
-            clearable
-          ></v-rating>
-        </v-flex>
-        <v-flex xs12>
-          <v-checkbox hide-details v-model="favoritesOnly" label="Show favorites only"></v-checkbox>
-          <v-checkbox hide-details v-model="bookmarksOnly" label="Show bookmarks only"></v-checkbox>
-        </v-flex>
-
-        <v-flex class="mt-2" xs12 v-for="field in fieldFilters" :key="field.name">
-          <CustomField :field="field" :value="field.value" v-on:change="setFieldFilterValue" />
-        </v-flex>
-      </v-layout>
     </v-navigation-drawer>
 
-    <v-dialog v-model="createDialog" max-width="300px">
-      <v-card>
-        <v-toolbar dark :color="$store.getters['globals/primaryColor']">
-          <v-toolbar-title>Add actor</v-toolbar-title>
-        </v-toolbar>
+    <div v-if="!fetchLoader">
+      <div class="d-flex align-center">
+        <h1 class="font-weight-light mr-3">Actors</h1>
+        <v-btn @click="openCreateDialog" icon>
+          <v-icon>mdi-plus</v-icon>
+        </v-btn>
+      </div>
+      <v-row>
+        <v-col v-for="actor in actors" :key="actor._id" cols="12" sm="6" md="4" lg="3">
+          <actor-card
+            @rate="rate(actor._id, $event)"
+            @bookmark="bookmark(actor._id, $event)"
+            @favorite="favorite(actor._id, $event)"
+            :actor="actor"
+            style="height: 100%"
+          />
+        </v-col>
+      </v-row>
+    </div>
 
+    <div v-else class="text-center">
+      <p>Loading...</p>
+      <v-progress-circular indeterminate></v-progress-circular>
+    </div>
+
+    <v-dialog v-model="createActorDialog" max-width="400px">
+      <v-card :loading="addActorLoader">
+        <v-card-title>Add new actor/actress</v-card-title>
         <v-card-text>
-          <v-text-field
-            :color="$store.getters['globals/secondaryColor']"
-            single-line
-            v-model="creating.name"
-            label="Enter a name"
-          ></v-text-field>
-        </v-card-text>
+          <v-form v-model="validCreation">
+            <v-text-field
+              :rules="actorNameRules"
+              color="accent"
+              v-model="createActorName"
+              placeholder="Name"
+            />
 
+            <v-combobox
+              color="accent"
+              multiple
+              chips
+              v-model="createActorAliases"
+              placeholder="Alias names"
+            />
+
+            <v-chip
+              label
+              @click:close="createSelectedLabels.splice(i, 1)"
+              class="mr-1 mb-1"
+              close
+              small
+              outlined
+              v-for="(name, i) in labelNames(createSelectedLabels)"
+              :key="name"
+            >{{ name }}</v-chip>
+            <v-chip
+              label
+              class="mr-1 mb-1"
+              @click="openLabelSelectorDialog"
+              color="accent"
+              dark
+              small
+            >+ Select labels</v-chip>
+          </v-form>
+        </v-card-text>
+        <v-divider></v-divider>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn @click="createDialog = false" text>Cancel</v-btn>
-          <v-btn @click="addActor" :color="$store.getters['globals/secondaryColor']">Save</v-btn>
+          <v-btn
+            depressed
+            class="black--text text-none"
+            :disabled="!validCreation"
+            color="primary"
+            @click="addActor"
+          >Add</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
-  </v-container>
+
+    <v-dialog scrollable v-model="labelSelectorDialog" max-width="400px">
+      <v-card>
+        <v-card-title>Select labels for '{{ createActorName }}'</v-card-title>
+
+        <v-card-text style="max-height: 400px">
+          <LabelSelector :items="allLabels" v-model="createSelectedLabels" />
+        </v-card-text>
+        <v-divider></v-divider>
+
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn
+            @click="labelSelectorDialog = false"
+            depressed
+            color="primary"
+            class="black--text text-none"
+          >OK</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <infinite-loading :identifier="infiniteId" @infinite="infiniteHandler">
+      <div slot="no-results">
+        <v-icon large>mdi-close</v-icon>
+        <div>Nothing found!</div>
+      </div>
+
+      <div slot="spinner">
+        <v-progress-circular indeterminate></v-progress-circular>
+        <div>Loading...</div>
+      </div>
+
+      <div slot="no-more">
+        <v-icon large>mdi-emoticon-wink</v-icon>
+        <div>That's all!</div>
+      </div>
+    </infinite-loading>
+  </div>
 </template>
 
 <script lang="ts">
-import Vue from "vue";
-import Component from "vue-class-component";
-import Actor from "@/classes/actor";
-import ActorComponent from "@/components/Actor.vue";
-import { toTitleCase } from "@/util/string";
-import Fuse from "fuse.js";
-import { exportToDisk } from "@/util/library";
-import CustomField, { CustomFieldType } from "@/classes/custom_field";
-import CustomFieldComponent from "@/components/CustomField.vue";
-import ActorModule from "@/store_modules/actors";
-import GlobalsModule from "@/store_modules/globals";
-import VideosModule from "@/store_modules/videos";
-
-enum FilterMode {
-  NONE,
-  EQUALS,
-  INCLUDES,
-  GREATER_THAN,
-  LESSER_THAN,
-  INCLUDES_SOME
-}
-
-type FieldFilter = {
-  name: string;
-  values: string[] | null;
-  type: CustomFieldType;
-  mode: FilterMode;
-  value: string | number | boolean | null | string[];
-};
+import { Component, Vue, Watch } from "vue-property-decorator";
+import ApolloClient, { serverBase } from "../apollo";
+import gql from "graphql-tag";
+import ActorCard from "../components/ActorCard.vue";
+import LabelSelector from "../components/LabelSelector.vue";
+import actorFragment from "../fragments/actor";
+import { contextModule } from "../store/context";
+import InfiniteLoading from "vue-infinite-loading";
 
 @Component({
   components: {
-    Actor: ActorComponent,
-    CustomField: CustomFieldComponent
+    ActorCard,
+    LabelSelector,
+    InfiniteLoading
   }
 })
-export default class Actors extends Vue {
-  createDialog = false;
+export default class SceneList extends Vue {
+  actors = [] as any[];
+  fetchLoader = false;
 
-  creating = {
-    name: ""
-  };
+  waiting = false;
+  allLabels = [] as any[];
+  selectedLabels = [] as number[];
 
-  sortModes = [
+  validCreation = false;
+  createActorDialog = false;
+  createActorName = "";
+  createActorAliases = [] as string[];
+  createSelectedLabels = [] as number[];
+  labelSelectorDialog = false;
+  addActorLoader = false;
+
+  actorNameRules = [v => (!!v && !!v.length) || "Invalid actor name"];
+
+  query = "";
+  page = 0;
+
+  sortDir = "desc";
+  sortDirItems = [
     {
-      name: "Date added (newest)",
-      value: 0 // !TODO: Sort mode enum
+      text: "Ascending",
+      value: "asc"
     },
     {
-      name: "Date added (oldest)",
-      value: 1
-    },
-    {
-      name: "Name - A to Z",
-      value: 2
-    },
-    {
-      name: "Name - Z to A",
-      value: 3
-    },
-    {
-      name: "Highest rated",
-      value: 4
-    },
-    {
-      name: "Lowest rated",
-      value: 5
-    },
-    {
-      name: "Most viewed",
-      value: 6
-    },
-    {
-      name: "Least viewed",
-      value: 7
+      text: "Descending",
+      value: "desc"
     }
   ];
 
-  fieldFilters = [] as FieldFilter[];
-
-  mounted() {
-    console.log(GlobalsModule.getCustomFields);
-    this.fieldFilters = GlobalsModule.getCustomFields.slice().map(field => {
-      return {
-        name: field.name,
-        values: field.values,
-        type: field.type,
-        mode: FilterMode.NONE,
-        value: field.type >= 3 ? [] : null
-      };
-    }) as FieldFilter[];
-  }
-
-  setFieldFilterValue({
-    key,
-    value,
-    mode
-  }: {
-    key: string;
-    value: string;
-    mode: FilterMode;
-  }) {
-    let field = (<FieldFilter[]>this.fieldFilters).find(f => f.name == key);
-
-    field.value = value;
-    field.mode = mode;
-  }
-
-  setRatingFilter(i: number) {
-    if (this.ratingFilter === i) {
-      this.ratingFilter = 0;
-    } else {
-      this.ratingFilter = i;
+  sortBy = "relevance";
+  sortByItems = [
+    {
+      text: "Relevance",
+      value: "relevance"
+    },
+    {
+      text: "Added to libray",
+      value: "addedOn"
+    },
+    {
+      text: "Rating",
+      value: "rating"
     }
+  ];
+
+  favoritesOnly = false;
+  bookmarksOnly = false;
+  ratingFilter = 0;
+
+  infiniteId = 0;
+  resetTimeout = null as any;
+
+  get drawer() {
+    return contextModule.showFilters;
+  }
+
+  set drawer(val: boolean) {
+    contextModule.toggleFilters(val);
   }
 
   addActor() {
-    let actor = Actor.create(toTitleCase(this.creating.name));
-
-    let customFieldNames = GlobalsModule.getCustomFieldNames;
-
-    customFieldNames.forEach(field => {
-      actor.customFields[field] = null;
-    });
-
-    ActorModule.add(actor);
-    this.createDialog = false;
-
-    exportToDisk();
-  }
-
-  get labels(): string[] {
-    return ActorModule.getLabels;
-  }
-
-  get items(): Actor[] {
-    let actors = JSON.parse(JSON.stringify(ActorModule.getAll)) as any[];
-
-    if (this.favoritesOnly) {
-      actors = actors.filter(actor => actor.favorite);
-    }
-
-    if (this.bookmarksOnly) {
-      actors = actors.filter(actor => actor.bookmark);
-    }
-
-    if (this.chosenLabels.length) {
-      actors = actors.filter(actor =>
-        this.chosenLabels.every((label: string) => actor.labels.includes(label))
-      );
-    }
-
-    if (this.ratingFilter > 0) {
-      actors = actors.filter(v => v.rating >= this.ratingFilter);
-    }
-
-    for (const field of JSON.parse(JSON.stringify(this.fieldFilters))) {
-      if (field.value === null || field.mode === FilterMode.NONE) {
-        continue;
+    this.addActorLoader = true;
+    ApolloClient.mutate({
+      mutation: gql`
+        mutation($name: String!, $aliases: [String!], $labels: [String!]) {
+          addActor(name: $name, aliases: $aliases, labels: $labels) {
+            ...ActorFragment
+          }
+        }
+        ${actorFragment}
+      `,
+      variables: {
+        name: this.createActorName,
+        aliases: this.createActorAliases,
+        labels: this.labelIDs(this.createSelectedLabels)
       }
+    })
+      .then(res => {
+        this.actors.unshift(res.data.addActor);
+        this.createActorDialog = false;
+        this.createActorName = "";
+        this.createActorAliases = [];
+        this.selectedLabels = [];
+      })
+      .catch(() => {})
+      .finally(() => {
+        this.addActorLoader = false;
+      });
+  }
 
-      if (field.type === CustomFieldType.STRING && field.value.length) {
-        field.value = field.value.toLowerCase();
-
-        if (field.mode === FilterMode.EQUALS) {
-          actors = actors.filter(i => {
-            let value = i.customFields[field.name];
-            return value.toString().toLowerCase() == field.value;
-          });
-        } else if (field.mode === FilterMode.INCLUDES) {
-          actors = actors.filter(i => {
-            let value = i.customFields[field.name];
-            return value
-              .toString()
-              .toLowerCase()
-              .includes(field.value);
-          });
-        }
-      } else if (field.type === CustomFieldType.NUMBER) {
-        if (field.mode === FilterMode.EQUALS) {
-          actors = actors.filter(i => {
-            let value = i.customFields[field.name];
-            return value == field.value;
-          });
-        } else if (field.mode == FilterMode.GREATER_THAN) {
-          actors = actors.filter(i => {
-            let value = i.customFields[field.name];
-            return value > field.value;
-          });
-        } else if (field.mode == FilterMode.LESSER_THAN) {
-          actors = actors.filter(i => {
-            let value = i.customFields[field.name];
-            return value < field.value;
-          });
-        }
-      } else if (field.type === CustomFieldType.BOOLEAN) {
-        actors = actors.filter(i => {
-          let value = i.customFields[field.name];
-          return value == field.value;
+  openLabelSelectorDialog() {
+    if (!this.allLabels.length) {
+      ApolloClient.query({
+        query: gql`
+          {
+            getLabels {
+              _id
+              name
+              aliases
+            }
+          }
+        `
+      })
+        .then(res => {
+          this.allLabels = res.data.getLabels;
+          this.labelSelectorDialog = true;
+        })
+        .catch(err => {
+          console.error(err);
         });
-      } else if (field.type === CustomFieldType.SELECT && field.value) {
-        if (Array.isArray(field.value)) continue;
+    } else {
+      this.labelSelectorDialog = true;
+    }
+  }
 
-        actors = actors.filter(i => {
-          let value = i.customFields[field.name];
-          return value == field.value;
-        });
-      } else if (
-        field.type === CustomFieldType.MULTI_SELECT &&
-        field.value.length
-      ) {
-        if (field.mode === FilterMode.INCLUDES) {
-          actors = actors.filter(i => {
-            let values = (i.customFields[field.name] as unknown) as string[];
-            return field.value.every((value: string) => values.includes(value));
-          });
-        } else if (field.mode === FilterMode.INCLUDES_SOME) {
-          actors = actors.filter(i => {
-            let values = (i.customFields[field.name] as unknown) as string[];
-            return field.value.some((value: string) => values.includes(value));
-          });
-        }
+  labelIDs(indices: number[]) {
+    return indices.map(i => this.allLabels[i]).map(l => l._id);
+  }
+
+  labelNames(indices: number[]) {
+    return indices.map(i => this.allLabels[i].name);
+  }
+
+  openCreateDialog() {
+    this.createActorDialog = true;
+  }
+
+  rate(id: any, rating: number) {
+    const index = this.actors.findIndex(sc => sc._id == id);
+
+    if (index > -1) {
+      const actor = this.actors[index];
+      actor.rating = rating;
+      Vue.set(this.actors, index, actor);
+    }
+  }
+
+  favorite(id: any, favorite: boolean) {
+    const index = this.actors.findIndex(sc => sc._id == id);
+
+    if (index > -1) {
+      const actor = this.actors[index];
+      actor.favorite = favorite;
+      Vue.set(this.actors, index, actor);
+    }
+  }
+
+  bookmark(id: any, bookmark: boolean) {
+    const index = this.actors.findIndex(sc => sc._id == id);
+
+    if (index > -1) {
+      const actor = this.actors[index];
+      actor.bookmark = bookmark;
+      Vue.set(this.actors, index, actor);
+    }
+  }
+
+  actorLabels(actor: any) {
+    return actor.labels.map(l => l.name);
+  }
+
+  actorActorNames(actor: any) {
+    return actor.actors.map(a => a.name).join(", ");
+  }
+
+  actorThumbnail(actor: any) {
+    if (actor.thumbnail)
+      return `${serverBase}/image/${
+        actor.thumbnail._id
+      }?password=${localStorage.getItem("password")}`;
+    return "";
+  }
+
+  @Watch("ratingFilter", {})
+  onRatingChange(newVal: number) {
+    this.page = 0;
+    this.actors = [];
+    this.infiniteId++;
+  }
+
+  @Watch("favoritesOnly")
+  onFavoriteChange() {
+    this.page = 0;
+    this.actors = [];
+    this.infiniteId++;
+  }
+
+  @Watch("bookmarksOnly")
+  onBookmarkChange() {
+    this.page = 0;
+    this.actors = [];
+    this.infiniteId++;
+  }
+
+  @Watch("sortDir")
+  onSortDirChange() {
+    this.page = 0;
+    this.actors = [];
+    this.infiniteId++;
+  }
+
+  @Watch("sortBy")
+  onSortChange() {
+    this.page = 0;
+    this.actors = [];
+    this.infiniteId++;
+  }
+
+  @Watch("selectedLabels")
+  onLabelChange() {
+    this.page = 0;
+    this.actors = [];
+    this.infiniteId++;
+  }
+
+  @Watch("query")
+  onQueryChange() {
+    if (this.resetTimeout) {
+      clearTimeout(this.resetTimeout);
+    }
+
+    this.waiting = true;
+    this.page = 0;
+    this.actors = [];
+
+    this.resetTimeout = setTimeout(() => {
+      this.waiting = false;
+      this.infiniteId++;
+    }, 500);
+  }
+
+  infiniteHandler($state) {
+    this.fetchPage().then(items => {
+      if (items.length) {
+        this.page++;
+        this.actors.push(...items);
+        $state.loaded();
+      } else {
+        $state.complete();
       }
+    });
+  }
+
+  async fetchPage() {
+    try {
+      let include = "";
+
+      if (this.selectedLabels.length)
+        include =
+          "include:" +
+          this.selectedLabels.map(i => this.allLabels[i]._id).join(",");
+
+      const query = `query:'${this.query || ""}' ${include} page:${
+        this.page
+      } sortDir:${this.sortDir} sortBy:${this.sortBy} favorite:${
+        this.favoritesOnly ? "true" : "false"
+      } bookmark:${this.bookmarksOnly ? "true" : "false"} rating:${
+        this.ratingFilter
+      }`;
+
+      const result = await ApolloClient.query({
+        query: gql`
+          query($query: String) {
+            getActors(query: $query) {
+              ...ActorFragment
+            }
+          }
+          ${actorFragment}
+        `,
+        variables: {
+          query
+        }
+      });
+
+      return result.data.getActors;
+    } catch (err) {
+      throw err;
     }
-
-    if (this.search && this.search.length) {
-      var options = {
-        shouldSort: true,
-        threshold: 0.25,
-        location: 0,
-        distance: 100,
-        maxPatternLength: 32,
-        minMatchCharLength: 1,
-        keys: ["name", "labels", "aliases"]
-      };
-      var fuse = new Fuse(actors, options); // "list" is the item array
-      actors = fuse.search(this.search);
-    }
-
-    switch (this.chosenSort) {
-      case 0:
-        actors.sort((a, b) => b.addedOn - a.addedOn);
-        break;
-      case 1:
-        actors.sort((a, b) => a.addedOn - b.addedOn);
-        break;
-      case 2:
-        actors.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      case 3:
-        actors.sort((a, b) => b.name.localeCompare(a.name));
-        break;
-      case 4:
-        actors.sort((a, b) => b.rating - a.rating);
-        break;
-      case 5:
-        actors.sort((a, b) => a.rating - b.rating);
-        break;
-      case 6:
-        actors.forEach(actor => {
-          actor["watches"] = VideosModule.getActorWatches(actor.id);
-        });
-
-        actors.sort((a, b) => b.watches.length - a.watches.length);
-        break;
-      case 7:
-        actors.forEach(actor => {
-          actor["watches"] = VideosModule.getActorWatches(actor.id);
-        });
-
-        actors.sort((a, b) => a.watches.length - b.watches.length);
-        break;
-    }
-
-    return actors as Actor[];
   }
 
-  get chosenSort(): number {
-    return this.$store.state.actors.search.chosenSort;
-  }
-
-  set chosenSort(value: number) {
-    ActorModule.setSearchParam({
-      key: "chosenSort",
-      value
-    });
-  }
-
-  get ratingFilter(): number {
-    return this.$store.state.actors.search.ratingFilter;
-  }
-
-  set ratingFilter(value: number) {
-    ActorModule.setSearchParam({
-      key: "ratingFilter",
-      value
-    });
-  }
-
-  get bookmarksOnly(): boolean {
-    return this.$store.state.actors.search.bookmarksOnly;
-  }
-
-  set bookmarksOnly(value: boolean) {
-    ActorModule.setSearchParam({
-      key: "bookmarksOnly",
-      value
-    });
-  }
-
-  get favoritesOnly(): boolean {
-    return this.$store.state.actors.search.favoritesOnly;
-  }
-
-  set favoritesOnly(value: boolean) {
-    ActorModule.setSearchParam({
-      key: "favoritesOnly",
-      value
-    });
-  }
-
-  get chosenLabels(): string[] {
-    return this.$store.state.actors.search.chosenLabels;
-  }
-
-  set chosenLabels(value: string[]) {
-    ActorModule.setSearchParam({
-      key: "chosenLabels",
-      value
-    });
-  }
-
-  get search(): string {
-    return this.$store.state.actors.search.search;
-  }
-  set search(value: string) {
-    ActorModule.setSearchParam({
-      key: "search",
-      value
-    });
-  }
-
-  get gridSize(): number {
-    return this.$store.state.actors.search.gridSize;
-  }
-
-  set gridSize(value: number) {
-    ActorModule.setSearchParam({
-      key: "gridSize",
-      value
-    });
-  }
-
-  get filterDrawer(): boolean {
-    return this.$store.state.actors.search.filterDrawer;
-  }
-
-  set filterDrawer(value: boolean) {
-    ActorModule.setSearchParam({
-      key: "filterDrawer",
-      value
-    });
+  beforeMount() {
+    ApolloClient.query({
+      query: gql`
+        {
+          getLabels {
+            _id
+            name
+            aliases
+          }
+        }
+      `
+    })
+      .then(res => {
+        this.allLabels = res.data.getLabels;
+      })
+      .catch(err => {
+        console.error(err);
+      });
   }
 }
 </script>
-
-<style>
-</style>

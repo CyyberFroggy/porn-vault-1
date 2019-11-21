@@ -1,8 +1,6 @@
 .DS_Store
 node_modules
 /dist
-library/
-backup/
 
 # local env files
 .env.local
@@ -21,6 +19,3 @@ yarn-error.log*
 *.njsproj
 *.sln
 *.sw?
-
-#Electron-builder output
-build/
