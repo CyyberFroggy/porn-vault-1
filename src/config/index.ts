@@ -12,8 +12,20 @@ const existsAsync = promisify(exists);
 const readFileAsync = promisify(readFile);
 const writeFileAsync = promisify(writeFile);
 
-function stringifyFormatted(obj: any) {
-  return JSON.stringify(obj, null, 1);
+enum ConfigFileFormat {
+  JSON = "JSON",
+  YAML = "YAML"
+}
+
+function stringifyFormatted(obj: any, format: ConfigFileFormat) {
+  switch (format) {
+    case ConfigFileFormat.JSON:
+      return JSON.stringify(obj, null, 1);
+    case ConfigFileFormat.YAML:
+      return YAML.stringify(obj);
+    default:
+      return "";
+  }
 }
 
 interface IPlugin {
@@ -136,6 +148,7 @@ export const defaultConfig: IConfig = {
 };
 
 let loadedConfig;
+let loadedConfigFormat: ConfigFileFormat = ConfigFileFormat.JSON;
 export let configFile;
 
 export async function checkConfig() {
@@ -153,7 +166,7 @@ export async function checkConfig() {
     if (defaultOverride) {
       await writeFileAsync(
         configFile,
-        stringifyFormatted(loadedConfig),
+        stringifyFormatted(loadedConfig, loadedConfigFormat),
         "utf-8"
       );
     }
@@ -172,12 +185,12 @@ export async function checkConfig() {
   loadedConfig = await setupFunction();
 
   if (yaml) {
-    await writeFileAsync("config.yaml", YAML.stringify(loadedConfig), "utf-8");
+    await writeFileAsync("config.yaml", stringifyFormatted(loadedConfig, ConfigFileFormat.YAML), "utf-8");
     logger.warn("Created config.yaml. Please edit and restart.");
   } else {
     await writeFileAsync(
       "config.json",
-      stringifyFormatted(loadedConfig),
+      stringifyFormatted(loadedConfig, ConfigFileFormat.JSON),
       "utf-8"
     );
     logger.warn("Created config.json. Please edit and restart.");
@@ -191,6 +204,7 @@ export async function loadConfig() {
     logger.message("Loading config.json...");
     try {
       loadedConfig = JSON.parse(await readFileAsync("config.json", "utf-8"));
+      loadedConfigFormat = ConfigFileFormat.JSON;
     } catch (error) {
       logger.error(error.message);
       process.exit(1);
@@ -201,6 +215,7 @@ export async function loadConfig() {
     logger.message("Loading config.yaml...");
     try {
       loadedConfig = YAML.parse(await readFileAsync("config.yaml", "utf-8"));
+      loadedConfigFormat = ConfigFileFormat.YAML;
     } catch (error) {
       logger.error(error.message);
       process.exit(1);
@@ -225,6 +240,7 @@ export function watchConfig() {
     if (configFile.endsWith(".json")) {
       try {
         newConfig = JSON.parse(await readFileAsync("config.json", "utf-8"));
+        loadedConfigFormat = ConfigFileFormat.JSON;
       } catch (error) {
         logger.error(error.message);
         logger.error("ERROR when loading new config, please fix it.");
@@ -232,6 +248,7 @@ export function watchConfig() {
     } else if (configFile.endsWith(".yaml")) {
       try {
         newConfig = YAML.parse(await readFileAsync("config.yaml", "utf-8"));
+        loadedConfigFormat = ConfigFileFormat.YAML;
       } catch (error) {
         logger.error(error.message);
         logger.error("ERROR when loading new config, please fix it.");
