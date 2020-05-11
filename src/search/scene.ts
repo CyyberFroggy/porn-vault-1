@@ -41,8 +41,8 @@ async function createSceneSearchDoc(scene: Scene): Promise<ISceneSearchDoc> {
     name: scene.name,
     labels: labels.map((l) => l._id),
     actors: actors.map((a) => a._id),
-    actor_names: actors.map((a) => a.name),
-    label_names: labels.map((l) => l.name),
+    actor_names: actors.map((a) => [a.name, ...a.aliases]).flat(),
+    label_names: labels.map((l) => [l.name, ...l.aliases]).flat(),
     rating: scene.rating,
     bookmark: scene.bookmark,
     favorite: scene.favorite,
@@ -205,6 +205,20 @@ export async function searchScenes(query: string) {
     });
   }
 
+  if (options.studios.length) {
+    filter.children.push({
+      type: "OR",
+      children: options.exclude.map((studioId) => ({
+        condition: {
+          operation: "=",
+          property: "studio",
+          type: "string",
+          value: studioId,
+        },
+      })),
+    });
+  }
+
   if (options.sortBy) {
     const sortType = {
       name: "string",
@@ -242,12 +256,6 @@ export async function buildSceneIndex() {
 
   loader.succeed(`Build done in ${(Date.now() - timeNow) / 1000}s.`);
   logger.log(`Index size: ${res} items`);
-
-  /* console.log(
-    await searchScenes(
-      "query:gianna sortBy:duration durationMax:5 include:la_k3ajw7luf8GO6Q1X"
-    )
-  ); */
 
   return index;
 }

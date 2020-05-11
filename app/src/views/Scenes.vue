@@ -103,8 +103,12 @@
       </v-container>
     </v-navigation-drawer>
 
-    <div v-if="!fetchLoader">
-      <div class="d-flex align-center">
+    <div class="text-center" v-if="fetchError">
+      <div>There was an error</div>
+      <v-btn @click="loadPage(page)">Try again</v-btn>
+    </div>
+    <div v-else>
+      <div class="mb-2 d-flex align-center">
         <div class="mr-3">
           <span class="display-1 font-weight-bold mr-2">{{ numResults }}</span>
           <span class="title font-weight-regular">scenes found</span>
@@ -113,41 +117,51 @@
           <v-icon>mdi-shuffle-variant</v-icon>
         </v-btn>
       </div>
-      <v-row>
-        <template v-for="(scene, i) in scenes">
-          <v-col v-if="scene.page" :key="scene.page" cols="12">
-            <v-subheader style="height: 20px">Page {{ scene.page }} / {{ numPages }}</v-subheader>
-          </v-col>
-
-          <v-col v-else :key="scene._id" class="pa-1" cols="12" sm="6" md="4" lg="3" xl="2">
-            <scene-card
-              :class="selectedScenes.length && !selectedScenes.includes(scene._id) ? 'not-selected' : ''"
-              :showLabels="showCardLabels"
-              v-model="scenes[i]"
-              style="height: 100%"
-            >
-              <template v-slot:action="{ hover }">
-                <v-fade-transition>
-                  <v-checkbox
-                    v-if="hover || selectedScenes.includes(scene._id)"
-                    color="primary"
-                    :input-value="selectedScenes.includes(scene._id)"
-                    @change="selectScene(scene._id)"
-                    @click.native.stop.prevent
-                    class="mt-0"
-                    hide-details
-                    :contain="true"
-                  ></v-checkbox>
-                </v-fade-transition>
-              </template>
-            </scene-card>
-          </v-col>
-        </template>
+      <v-row v-if="!fetchLoader && numResults">
+        <v-col
+          v-for="(scene, i) in scenes"
+          :key="scene._id"
+          class="pa-1"
+          cols="12"
+          sm="6"
+          md="4"
+          lg="3"
+          xl="2"
+        >
+          <scene-card
+            :class="selectedScenes.length && !selectedScenes.includes(scene._id) ? 'not-selected' : ''"
+            :showLabels="showCardLabels"
+            v-model="scenes[i]"
+            style="height: 100%"
+          >
+            <template v-slot:action="{ hover }">
+              <v-fade-transition>
+                <v-checkbox
+                  v-if="hover || selectedScenes.includes(scene._id)"
+                  color="primary"
+                  :input-value="selectedScenes.includes(scene._id)"
+                  @change="selectScene(scene._id)"
+                  @click.native.stop.prevent
+                  class="mt-0"
+                  hide-details
+                  :contain="true"
+                ></v-checkbox>
+              </v-fade-transition>
+            </template>
+          </scene-card>
+        </v-col>
       </v-row>
+      <NoResults v-else-if="!fetchLoader && !numResults" />
+      <Loading v-else />
     </div>
-    <div v-else class="text-center">
-      <p>Loading...</p>
-      <v-progress-circular indeterminate></v-progress-circular>
+    <div v-if="numResults && numPages > 1">
+      <v-pagination
+        @input="loadPage"
+        v-model="page"
+        :total-visible="7"
+        :disabled="fetchLoader"
+        :length="numPages"
+      ></v-pagination>
     </div>
 
     <v-dialog scrollable v-model="createSceneDialog" max-width="400px">
@@ -228,23 +242,6 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-
-    <infinite-loading :identifier="infiniteId" @infinite="infiniteHandler">
-      <div slot="no-results">
-        <v-icon large>mdi-close</v-icon>
-        <div>Nothing found!</div>
-      </div>
-
-      <div slot="spinner">
-        <v-progress-circular indeterminate></v-progress-circular>
-        <div>Loading...</div>
-      </div>
-
-      <div slot="no-more">
-        <v-icon large>mdi-emoticon-wink</v-icon>
-        <div>That's all!</div>
-      </div>
-    </infinite-loading>
   </v-container>
 </template>
 
@@ -282,8 +279,9 @@ export default class SceneList extends mixins(DrawerMixin) {
     return contextModule.showSidenav;
   }
 
-  scenes = [] as (IScene | { _id: undefined; page: number })[];
+  scenes = [] as IScene[];
   fetchLoader = false;
+  fetchError = false;
   fetchingRandom = false;
 
   selectedActors = (() => {
@@ -314,9 +312,10 @@ export default class SceneList extends mixins(DrawerMixin) {
     localStorage.setItem("pm_sceneInclude", val.include.join(","));
     localStorage.setItem("pm_sceneExclude", val.exclude.join(","));
 
-    this.page = 0;
+    this.page = 1;
     this.scenes = [];
-    this.infiniteId++;
+    this.numResults = 0;
+    this.numPages = 0;
   }
 
   validCreation = false;
@@ -330,7 +329,7 @@ export default class SceneList extends mixins(DrawerMixin) {
   sceneNameRules = [v => (!!v && !!v.length) || "Invalid scene name"];
 
   query = localStorage.getItem("pm_sceneQuery") || "";
-  page = 0;
+  page = 1;
   numResults = 0;
   numPages = 0;
 
@@ -403,7 +402,6 @@ export default class SceneList extends mixins(DrawerMixin) {
   bookmarksOnly = localStorage.getItem("pm_sceneBookmark") == "true";
   ratingFilter = parseInt(localStorage.getItem("pm_sceneRating") || "0");
 
-  infiniteId = 0;
   resetTimeout = null as NodeJS.Timeout | null;
 
   uploadDialog = false;
@@ -416,9 +414,9 @@ export default class SceneList extends mixins(DrawerMixin) {
     this.selectedLabels.include = [];
     this.selectedLabels.exclude = [];
 
-    this.page = 0;
+    this.page = 1;
     this.scenes = [];
-    this.infiniteId++;
+     this.loadPage(this.page);
 
     localStorage.removeItem("pm_sceneInclude");
     localStorage.removeItem("pm_sceneExclude");
@@ -564,48 +562,60 @@ export default class SceneList extends mixins(DrawerMixin) {
   @Watch("ratingFilter", {})
   onRatingChange(newVal: number) {
     localStorage.setItem("pm_sceneRating", newVal.toString());
-    this.page = 0;
+    this.page = 1;
     this.scenes = [];
-    this.infiniteId++;
+    this.loadPage(this.page);
+    this.numResults = 0;
+    this.numPages = 0;
   }
 
   @Watch("favoritesOnly")
   onFavoriteChange(newVal: boolean) {
     localStorage.setItem("pm_sceneFavorite", "" + newVal);
-    this.page = 0;
+    this.page = 1;
     this.scenes = [];
-    this.infiniteId++;
+    this.loadPage(this.page);
+    this.numResults = 0;
+    this.numPages = 0;
   }
 
   @Watch("bookmarksOnly")
   onBookmarkChange(newVal: boolean) {
     localStorage.setItem("pm_sceneBookmark", "" + newVal);
-    this.page = 0;
+    this.page = 1;
     this.scenes = [];
-    this.infiniteId++;
+    this.loadPage(this.page);
+    this.numResults = 0;
+    this.numPages = 0;
   }
 
   @Watch("sortDir")
   onSortDirChange(newVal: string) {
     localStorage.setItem("pm_sceneSortDir", newVal);
-    this.page = 0;
+    this.page = 1;
     this.scenes = [];
-    this.infiniteId++;
+    this.loadPage(this.page);
+    this.numResults = 0;
+    this.numPages = 0;
   }
 
   @Watch("sortBy")
   onSortChange(newVal: string) {
     localStorage.setItem("pm_sceneSortBy", newVal);
-    this.page = 0;
+    this.page = 1;
     this.scenes = [];
-    this.infiniteId++;
+    this.loadPage(this.page);
+    this.numResults = 0;
+    this.numPages = 0;
   }
 
   @Watch("selectedLabels")
   onLabelChange() {
-    this.page = 0;
+    this.page = 1;
     this.scenes = [];
-    this.infiniteId++;
+    this.loadPage(this.page);
+    this.numResults = 0;
+    this.numPages = 0;
   }
 
   @Watch("selectedActorIds", { deep: true })
@@ -617,12 +627,14 @@ export default class SceneList extends mixins(DrawerMixin) {
     localStorage.setItem("pm_sceneActors", JSON.stringify(this.selectedActors));
 
     this.waiting = true;
-    this.page = 0;
+    this.page = 1;
     this.scenes = [];
+    this.numResults = 0;
+    this.numPages = 0;
 
     this.resetTimeout = setTimeout(() => {
       this.waiting = false;
-      this.infiniteId++;
+      this.loadPage(this.page);
     }, 500);
   }
 
@@ -642,12 +654,14 @@ export default class SceneList extends mixins(DrawerMixin) {
     );
 
     this.waiting = true;
-    this.page = 0;
+    this.page = 1;
     this.scenes = [];
+    this.numResults = 0;
+    this.numPages = 0;
 
     this.resetTimeout = setTimeout(() => {
       this.waiting = false;
-      this.infiniteId++;
+      this.loadPage(this.page);
     }, 500);
   }
 
@@ -660,32 +674,15 @@ export default class SceneList extends mixins(DrawerMixin) {
     localStorage.setItem("pm_sceneQuery", newVal || "");
 
     this.waiting = true;
-    this.page = 0;
+    this.page = 1;
     this.scenes = [];
+    this.numResults = 0;
+    this.numPages = 0;
 
     this.resetTimeout = setTimeout(() => {
       this.waiting = false;
-      this.infiniteId++;
+      this.loadPage(this.page);
     }, 500);
-  }
-
-  infiniteHandler($state) {
-    this.fetchPage()
-      .then(result => {
-        if (result.items.length) {
-          this.page++;
-          this.numResults = result.numItems;
-          this.numPages = result.numPages;
-          this.scenes.push({ _id: undefined, page: this.page });
-          this.scenes.push(...result.items);
-          $state.loaded();
-        } else {
-          $state.complete();
-        }
-      })
-      .catch(err => {
-        $state.error();
-      });
   }
 
   getRandom() {
@@ -700,7 +697,7 @@ export default class SceneList extends mixins(DrawerMixin) {
       });
   }
 
-  async fetchPage(random = 0) {
+  async fetchPage(page: number, random = 0) {
     try {
       let include = "";
       let exclude = "";
@@ -716,7 +713,7 @@ export default class SceneList extends mixins(DrawerMixin) {
         actors = "actors:" + this.selectedActorIds.join(",");
 
       const query = `query:'${this.query ||
-        ""}' ${actors} ${include} ${exclude} page:${this.page} sortDir:${
+        ""}' ${actors} ${include} ${exclude} page:${page - 1} sortDir:${
         this.sortDir
       } sortBy:${this.sortBy} favorite:${
         this.favoritesOnly ? "true" : "false"
@@ -756,6 +753,29 @@ export default class SceneList extends mixins(DrawerMixin) {
     } catch (err) {
       throw err;
     }
+  }
+
+  loadPage(page: number) {
+    this.fetchLoader = true;
+
+    this.fetchPage(page)
+      .then(result => {
+        this.fetchError = false;
+        this.scenes = result.items;
+        this.numResults = result.numItems;
+        this.numPages = result.numPages;
+      })
+      .catch(err => {
+        console.error(err);
+        this.fetchError = true;
+      })
+      .finally(() => {
+        this.fetchLoader = false;
+      });
+  }
+
+  mounted() {
+    this.loadPage(1);
   }
 
   beforeMount() {
