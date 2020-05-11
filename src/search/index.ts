@@ -3,11 +3,12 @@ import { studioIndex } from "./studio";
 import { movieIndex } from "./movie";
 
 import { buildImageIndex } from "./image";
-import { buildSceneIndex } from "./scene";
 import { buildActorIndex } from "./actor";
 import { buildStudioIndex } from "./studio";
 import { buildMovieIndex } from "./movie";
 import Axios from "axios";
+import { Gianna } from "./internal";
+import { buildSceneIndex } from "./scene";
 
 export interface ISearchResults {
   num_hits: number;
@@ -22,7 +23,7 @@ export interface ISearchResults {
 export const indices = {
   actors: actorIndex,
   studios: studioIndex,
-  movies: movieIndex
+  movies: movieIndex,
 };
 
 export async function buildIndices() {

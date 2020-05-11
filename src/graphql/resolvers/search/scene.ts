@@ -1,6 +1,6 @@
 import Scene from "../../../types/scene";
 import * as logger from "../../../logger";
-import { searchScenes } from "../../../search/scene";
+// import { searchScenes } from "../../../search/scene";
 
 function shuffle<T>(a: T[]) {
   for (let i = a.length - 1; i > 0; i--) {
@@ -15,7 +15,7 @@ export async function getScenes(
   { query, random }: { random: number | undefined; query: string | undefined }
 ) {
   try {
-    const timeNow = +new Date();
+    /* const timeNow = +new Date();
     const res = await searchScenes(query || "", random);
 
     if (random) {
@@ -29,7 +29,8 @@ export async function getScenes(
 
     const scenes = await Promise.all(res.data.items.map(Scene.getById));
     logger.log(`Search done in ${(Date.now() - timeNow) / 1000}s.`);
-    return scenes.filter(Boolean);
+    return scenes.filter(Boolean); */
+    return []; // TODO:
   } catch (error) {
     logger.error(error);
   }

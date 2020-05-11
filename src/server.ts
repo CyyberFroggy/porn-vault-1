@@ -30,7 +30,7 @@ import {
 } from "./queue/processing";
 import queueRouter from "./queue_router";
 import { spawn } from "child_process";
-import { clearSceneIndex } from "./search/scene";
+//import { clearSceneIndex } from "./search/scene";
 import { clearImageIndex } from "./search/image";
 import { spawnIzzy, izzyVersion, resetIzzy } from "./izzy";
 import https from "https";
@@ -225,14 +225,14 @@ export default async () => {
   }
   await loadStores();
 
-  setupMessage = "Starting search engine...";
+  /* setupMessage = "Starting search engine...";
   if (await twigsVersion()) {
     logger.log("Twigs already running, clearing indices...");
     await clearSceneIndex();
     await clearImageIndex();
   } else {
     await spawnTwigs();
-  }
+  } */
 
   setupMessage = "Checking imports...";
   await checkImportFolders();

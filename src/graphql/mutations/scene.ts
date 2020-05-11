@@ -8,7 +8,7 @@ import { Dictionary, mapAsync } from "../../types/utility";
 import { getConfig } from "../../config/index";
 import Studio from "../../types/studio";
 import Marker from "../../types/marker";
-import { removeSceneDoc, updateSceneDoc } from "../../search/scene";
+// import { removeSceneDoc, updateSceneDoc } from "../../search/scene";
 import { onSceneCreate } from "../../plugin_events/scene";
 import { sceneCollection } from "../../database";
 import { removeSceneFromQueue } from "../../queue/processing";
@@ -47,7 +47,7 @@ async function runScenePlugins(ids: string[]) {
       await Scene.setLabels(scene, labels);
       await Scene.setActors(scene, actors);
       await sceneCollection.upsert(scene._id, scene);
-      await updateSceneDoc(scene);
+      // await updateSceneDoc(scene); // TODO: update
 
       changedScenes.push(scene);
     }
@@ -239,7 +239,7 @@ export default {
 
         await sceneCollection.upsert(scene._id, scene);
         updatedScenes.push(scene);
-        await updateSceneDoc(scene);
+        // await updateSceneDoc(scene); // TODO: update
       }
     }
 
@@ -255,7 +255,7 @@ export default {
 
       if (scene) {
         await Scene.remove(scene);
-        await removeSceneDoc(scene._id);
+        // await removeSceneDoc(scene._id); // TODO: remove
         await Image.filterScene(scene._id);
 
         if (deleteImages === true) {

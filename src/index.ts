@@ -19,7 +19,7 @@ function killProcess(code = 0) {
       logger.log("Killing twigs...");
       twigsProcess.kill();
     }
-    if (twigsProcess) {
+    if (izzyProcess) {
       logger.log("Killing izzy...");
       izzyProcess.kill();
     }

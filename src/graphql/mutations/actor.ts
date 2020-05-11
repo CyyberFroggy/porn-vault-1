@@ -8,7 +8,7 @@ import { getConfig } from "../../config/index";
 import { indices } from "../../search/index";
 import { createActorSearchDoc } from "../../search/actor";
 import { onActorCreate } from "../../plugin_events/actor";
-import { updateSceneDoc } from "../../search/scene";
+// import { updateSceneDoc } from "../../search/scene";
 import { updateImageDoc, isBlacklisted } from "../../search/image";
 import { actorCollection } from "../../database";
 import LabelledItem from "../../types/labelled_item";
@@ -98,7 +98,7 @@ export default {
             (await Scene.getActors(scene)).map((l) => l._id).concat(actor._id)
           );
           try {
-            await updateSceneDoc(scene);
+            // await updateSceneDoc(scene); // TODO: update
           } catch (error) {
             logger.error(error.message);
           }

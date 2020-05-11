@@ -11,6 +11,7 @@ export namespace Izzy {
 
   export class Collection<T = any> {
     name: string;
+
     constructor(name) {
       this.name = name;
     }
