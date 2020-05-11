@@ -2,9 +2,7 @@ import Scene from "../types/scene";
 import Studio from "../types/studio";
 import * as logger from "../logger";
 import ora from "ora";
-import Axios from "axios";
 import extractQueryOptions from "../query_extractor";
-import { ISearchResults } from "./index";
 import argv from "../args";
 import SceneView from "../types/watch";
 import { Gianna } from "./internal/index";
@@ -15,7 +13,7 @@ export let index!: Gianna.Index<ISceneSearchDoc>;
 
 export interface ISceneSearchDoc {
   _id: string;
-  added_on: number;
+  addedOn: number;
   name: string;
   actors: string[];
   labels: string[];
@@ -24,8 +22,8 @@ export interface ISceneSearchDoc {
   rating: number;
   bookmark: number | null;
   favorite: boolean;
-  num_watches: number;
-  release_date: number | null;
+  views: number;
+  releaseDate: number | null;
   duration: number | null;
   studio: string | null;
   studio_name: string | null;
@@ -39,7 +37,7 @@ async function createSceneSearchDoc(scene: Scene): Promise<ISceneSearchDoc> {
 
   return {
     _id: scene._id,
-    added_on: scene.addedOn,
+    addedOn: scene.addedOn,
     name: scene.name,
     labels: labels.map((l) => l._id),
     actors: actors.map((a) => a._id),
@@ -48,9 +46,9 @@ async function createSceneSearchDoc(scene: Scene): Promise<ISceneSearchDoc> {
     rating: scene.rating,
     bookmark: scene.bookmark,
     favorite: scene.favorite,
-    num_watches: await SceneView.getCount(scene._id),
+    views: await SceneView.getCount(scene._id),
     duration: scene.meta.duration,
-    release_date: scene.releaseDate,
+    releaseDate: scene.releaseDate,
     studio: scene.studio,
     resolution: scene.meta.dimensions ? scene.meta.dimensions.height : 0,
     size: scene.meta.size,
@@ -95,7 +93,7 @@ export async function indexScenes(scenes: Scene[]) {
   return numItems;
 }
 
-export async function searchScenes(query: string, /* TODO: */ random = 0) {
+export async function searchScenes(query: string) {
   const options = extractQueryOptions(query);
   logger.log(`Searching scenes for '${options.query}'...`);
 
@@ -131,7 +129,7 @@ export async function searchScenes(query: string, /* TODO: */ random = 0) {
     filter.children.push({
       condition: {
         operation: "=",
-        property: "bookmark",
+        property: "favorite",
         type: "boolean",
         value: true,
       },
@@ -149,6 +147,17 @@ export async function searchScenes(query: string, /* TODO: */ random = 0) {
     });
   }
 
+  if (options.rating) {
+    filter.children.push({
+      condition: {
+        operation: ">",
+        property: "rating",
+        type: "number",
+        value: options.rating - 1,
+      },
+    });
+  }
+
   if (options.include.length) {
     filter.children.push({
       type: "AND",
@@ -159,6 +168,39 @@ export async function searchScenes(query: string, /* TODO: */ random = 0) {
           type: "array",
           value: labelId,
         },
+      })),
+    });
+  }
+
+  if (options.actors.length) {
+    filter.children.push({
+      type: "AND",
+      children: options.actors.map((labelId) => ({
+        condition: {
+          operation: "?",
+          property: "actors",
+          type: "array",
+          value: labelId,
+        },
+      })),
+    });
+  }
+
+  if (options.exclude.length) {
+    filter.children.push({
+      type: "AND",
+      children: options.exclude.map((labelId) => ({
+        type: "NOT",
+        children: [
+          {
+            condition: {
+              operation: "?",
+              property: "labels",
+              type: "array",
+              value: labelId,
+            },
+          },
+        ],
       })),
     });
   }
@@ -201,11 +243,11 @@ export async function buildSceneIndex() {
   loader.succeed(`Build done in ${(Date.now() - timeNow) / 1000}s.`);
   logger.log(`Index size: ${res} items`);
 
-  console.log(
+  /* console.log(
     await searchScenes(
       "query:gianna sortBy:duration durationMax:5 include:la_k3ajw7luf8GO6Q1X"
     )
-  );
+  ); */
 
   return index;
 }

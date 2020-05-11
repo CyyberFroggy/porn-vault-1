@@ -225,14 +225,14 @@ export default async () => {
   }
   await loadStores();
 
-  /* setupMessage = "Starting search engine...";
+  setupMessage = "Starting search engine...";
   if (await twigsVersion()) {
     logger.log("Twigs already running, clearing indices...");
-    await clearSceneIndex();
+    //await clearSceneIndex();
     await clearImageIndex();
   } else {
     await spawnTwigs();
-  } */
+  }
 
   setupMessage = "Checking imports...";
   await checkImportFolders();

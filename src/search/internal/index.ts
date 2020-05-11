@@ -28,7 +28,7 @@ export namespace Gianna {
   }
 
   export interface IFilterTreeGrouping {
-    type: "AND" | "OR"; // AND or OR
+    type: "AND" | "OR" | "NOT";
     children: (IFilterTreeGrouping | IFilterTreeTerminal)[];
   }
 

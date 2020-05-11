@@ -105,44 +105,44 @@
 
     <div v-if="!fetchLoader">
       <div class="d-flex align-center">
-        <h1 class="font-weight-light mr-3">Scenes</h1>
+        <div class="mr-3">
+          <span class="display-1 font-weight-bold mr-2">{{ numResults }}</span>
+          <span class="title font-weight-regular">scenes found</span>
+        </div>
         <v-btn :loading="fetchingRandom" @click="getRandom" icon>
           <v-icon>mdi-shuffle-variant</v-icon>
         </v-btn>
       </div>
       <v-row>
-        <v-col
-          class="pa-1"
-          v-for="(scene, i) in scenes"
-          :key="scene._id"
-          cols="12"
-          sm="6"
-          md="4"
-          lg="3"
-          xl="2"
-        >
-          <scene-card
-            :class="selectedScenes.length && !selectedScenes.includes(scene._id) ? 'not-selected' : ''"
-            :showLabels="showCardLabels"
-            v-model="scenes[i]"
-            style="height: 100%"
-          >
-            <template v-slot:action="{ hover }">
-              <v-fade-transition>
-                <v-checkbox
-                  v-if="hover || selectedScenes.includes(scene._id)"
-                  color="primary"
-                  :input-value="selectedScenes.includes(scene._id)"
-                  @change="selectScene(scene._id)"
-                  @click.native.stop.prevent
-                  class="mt-0"
-                  hide-details
-                  :contain="true"
-                ></v-checkbox>
-              </v-fade-transition>
-            </template>
-          </scene-card>
-        </v-col>
+        <template v-for="(scene, i) in scenes">
+          <v-col v-if="scene.page" :key="scene.page" cols="12">
+            <v-subheader style="height: 20px">Page {{ scene.page }} / {{ numPages }}</v-subheader>
+          </v-col>
+
+          <v-col v-else :key="scene._id" class="pa-1" cols="12" sm="6" md="4" lg="3" xl="2">
+            <scene-card
+              :class="selectedScenes.length && !selectedScenes.includes(scene._id) ? 'not-selected' : ''"
+              :showLabels="showCardLabels"
+              v-model="scenes[i]"
+              style="height: 100%"
+            >
+              <template v-slot:action="{ hover }">
+                <v-fade-transition>
+                  <v-checkbox
+                    v-if="hover || selectedScenes.includes(scene._id)"
+                    color="primary"
+                    :input-value="selectedScenes.includes(scene._id)"
+                    @change="selectScene(scene._id)"
+                    @click.native.stop.prevent
+                    class="mt-0"
+                    hide-details
+                    :contain="true"
+                  ></v-checkbox>
+                </v-fade-transition>
+              </template>
+            </scene-card>
+          </v-col>
+        </template>
       </v-row>
     </div>
     <div v-else class="text-center">
@@ -282,7 +282,7 @@ export default class SceneList extends mixins(DrawerMixin) {
     return contextModule.showSidenav;
   }
 
-  scenes = [] as IScene[];
+  scenes = [] as (IScene | { _id: undefined; page: number })[];
   fetchLoader = false;
   fetchingRandom = false;
 
@@ -331,6 +331,8 @@ export default class SceneList extends mixins(DrawerMixin) {
 
   query = localStorage.getItem("pm_sceneQuery") || "";
   page = 0;
+  numResults = 0;
+  numPages = 0;
 
   durationMax =
     parseInt(localStorage.getItem("pm_durationFilterMax") || "180") || 180;
@@ -361,7 +363,7 @@ export default class SceneList extends mixins(DrawerMixin) {
     },
     {
       text: "A-Z",
-      value: "alpha"
+      value: "name"
     },
     {
       text: "Added to collection",
@@ -389,7 +391,7 @@ export default class SceneList extends mixins(DrawerMixin) {
     },
     {
       text: "Release date",
-      value: "date"
+      value: "releaseDate"
     },
     {
       text: "Bookmarked",
@@ -669,10 +671,13 @@ export default class SceneList extends mixins(DrawerMixin) {
 
   infiniteHandler($state) {
     this.fetchPage()
-      .then(items => {
-        if (items.length) {
+      .then(result => {
+        if (result.items.length) {
           this.page++;
-          this.scenes.push(...items);
+          this.numResults = result.numItems;
+          this.numPages = result.numPages;
+          this.scenes.push({ _id: undefined, page: this.page });
+          this.scenes.push(...result.items);
           $state.loaded();
         } else {
           $state.complete();
@@ -724,13 +729,17 @@ export default class SceneList extends mixins(DrawerMixin) {
         query: gql`
           query($query: String, $random: Int) {
             getScenes(query: $query, random: $random) {
-              ...SceneFragment
-              actors {
-                ...ActorFragment
+              items {
+                ...SceneFragment
+                actors {
+                  ...ActorFragment
+                }
+                studio {
+                  ...StudioFragment
+                }
               }
-              studio {
-                ...StudioFragment
-              }
+              numItems
+              numPages
             }
           }
           ${sceneFragment}

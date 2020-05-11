@@ -1,16 +1,17 @@
 export enum SortTarget {
   RELEVANCE = "relevance",
   RATING = "rating",
-  DATE = "date",
+  DATE = "releaseDate",
   ADDED_ON = "addedOn",
   VIEWS = "views",
   DURATION = "duration",
-  ALPHABETIC = "alpha",
+  ALPHABETIC = "alpha", // TODO: deprecated
+  NAME = "name",
   NUM_SCENES = "scenes",
   SIZE = "size",
   RESOLUTION = "resolution",
   AGE = "age",
-  BOOKMARK = "bookmark"
+  BOOKMARK = "bookmark",
 }
 
 interface IQueryOptions {
@@ -67,7 +68,7 @@ export default (query?: string) => {
     durationMin: null,
     durationMax: null,
     skip: null,
-    take: null
+    take: null,
   };
 
   if (!query) return options;

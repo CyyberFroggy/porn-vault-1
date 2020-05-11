@@ -1,6 +1,6 @@
 import Scene from "../../../types/scene";
 import * as logger from "../../../logger";
-// import { searchScenes } from "../../../search/scene";
+import { searchScenes } from "../../../search/scene";
 
 function shuffle<T>(a: T[]) {
   for (let i = a.length - 1; i > 0; i--) {
@@ -15,22 +15,27 @@ export async function getScenes(
   { query, random }: { random: number | undefined; query: string | undefined }
 ) {
   try {
-    /* const timeNow = +new Date();
-    const res = await searchScenes(query || "", random);
+    const timeNow = +new Date();
+    const result = await searchScenes(query || "");
 
     if (random) {
       logger.log("Randomizing items...");
-      res.data.items = shuffle(res.data.items).slice(0, random);
+      result.items = shuffle(result.items).slice(0, random);
     }
 
     logger.log(
-      `Search results: ${res.data.num_hits} hits found in ${res.data.time.sec} sec`
+      `Search results: ${result.max_items} hits found in ${
+        (Date.now() - timeNow) / 1000
+      }s`
     );
 
-    const scenes = await Promise.all(res.data.items.map(Scene.getById));
+    const scenes = await Promise.all(result.items.map(Scene.getById));
     logger.log(`Search done in ${(Date.now() - timeNow) / 1000}s.`);
-    return scenes.filter(Boolean); */
-    return []; // TODO:
+    return {
+      numItems: result.max_items,
+      numPages: result.num_pages,
+      items: scenes.filter(Boolean),
+    };
   } catch (error) {
     logger.error(error);
   }
