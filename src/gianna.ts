@@ -26,7 +26,7 @@ export async function giannaVersion() {
 
 export async function resetGianna() {
   try {
-    await Axios.delete(`http://localhost:8001/`);
+    await Axios.delete(`http://localhost:8001/index`);
   } catch (error) {
     logger.error("Error while resetting gianna");
     logger.log(error.message);

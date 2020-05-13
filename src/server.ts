@@ -16,10 +16,9 @@ import { existsAsync } from "./fs/async";
 import { createBackup } from "./backup";
 import BROKEN_IMAGE from "./broken_image";
 import { mountApolloServer } from "./apollo";
-import { buildIndices, twigsVersion } from "./search";
+import { buildIndices } from "./search";
 import { checkImportFolders } from "./import/index";
 import cors from "./middlewares/cors";
-import { spawnTwigs } from "./twigs";
 import { httpLog } from "./logger";
 import { renderHandlebars } from "./render";
 import { dvdRenderer } from "./dvd_renderer";
@@ -30,8 +29,6 @@ import {
 } from "./queue/processing";
 import queueRouter from "./queue_router";
 import { spawn } from "child_process";
-//import { clearSceneIndex } from "./search/scene";
-import { clearImageIndex } from "./search/image";
 import { spawnIzzy, izzyVersion, resetIzzy } from "./izzy";
 import { spawnGianna, giannaVersion, resetGianna } from "./gianna";
 import https from "https";
@@ -232,16 +229,6 @@ export default async () => {
     await resetGianna();
   } else {
     await spawnGianna();
-  }
-
-  // TODO: deprecated
-  setupMessage = "Starting (old) search engine...";
-  if (await twigsVersion()) {
-    logger.log("Twigs already running, clearing indices...");
-    //await clearSceneIndex();
-    await clearImageIndex();
-  } else {
-    await spawnTwigs();
   }
 
   setupMessage = "Checking imports...";

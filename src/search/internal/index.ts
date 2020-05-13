@@ -84,7 +84,10 @@ export namespace Gianna {
         },
         {
           params: {
-            q: opts.query,
+            // hot fix, fix this in gianna eventually TODO:
+            q: opts.query
+              ? opts.query.trim().replace(/ {2,}/g, " ")
+              : opts.query,
             take: opts.take,
             skip: opts.skip,
           },

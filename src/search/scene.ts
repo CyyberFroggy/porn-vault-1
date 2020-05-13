@@ -235,6 +235,7 @@ export async function searchScenes(query: string, shuffleSeed = "default") {
       };
     } else {
       const sortType = {
+        addedOn: "number",
         name: "string",
         rating: "number",
         bookmark: "number",
@@ -274,28 +275,3 @@ export async function buildSceneIndex() {
 
   return index;
 }
-
-/* export async function searchScenes(query: string, random = 0) {
-  const options = extractQueryOptions(query);
-  logger.log(`Searching scenes for '${options.query}'...`);
-  return Axios.get<ISearchResults>("http://localhost:8000/scene", {
-    params: {
-      query: options.query || "",
-      skip: options.skip || options.page * 24,
-      take: (random ? 999999 : null) || options.take || PAGE_SIZE,
-      sort_by: options.sortBy,
-      sort_dir: options.sortDir,
-      favorite: options.favorite ? "true" : undefined,
-      bookmark: options.bookmark ? "true" : undefined,
-      rating: options.rating || 0,
-      include: options.include.join(","),
-      exclude: options.exclude.join(","),
-      actors: options.actors.join(","),
-      studio: options.studios[0],
-      duration_min: options.durationMin || undefined,
-      duration_max: options.durationMax || undefined,
-    },
-  });
-}
-
- */

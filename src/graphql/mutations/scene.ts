@@ -8,13 +8,11 @@ import { Dictionary, mapAsync } from "../../types/utility";
 import { getConfig } from "../../config/index";
 import Studio from "../../types/studio";
 import Marker from "../../types/marker";
-// import { removeSceneDoc, updateSceneDoc } from "../../search/scene";
 import { onSceneCreate } from "../../plugin_events/scene";
 import { sceneCollection } from "../../database";
 import { removeSceneFromQueue } from "../../queue/processing";
 import LabelledItem from "../../types/labelled_item";
 import ActorReference from "../../types/actor_reference";
-import MarkerReference from "../../types/marker_reference";
 import MovieScene from "../../types/movie_scene";
 import { updateScenes, index as sceneIndex } from "../../search/scene";
 

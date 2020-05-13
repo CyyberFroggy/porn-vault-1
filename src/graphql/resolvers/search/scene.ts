@@ -4,7 +4,7 @@ import { searchScenes } from "../../../search/scene";
 
 export async function getScenes(
   _,
-  { query, seed }: { query: string | undefined; seed: string | undefined }
+  { query, seed }: { query: string | undefined; seed?: string }
 ) {
   try {
     const timeNow = +new Date();
@@ -18,6 +18,7 @@ export async function getScenes(
 
     const scenes = await Promise.all(result.items.map(Scene.getById));
     logger.log(`Search done in ${(Date.now() - timeNow) / 1000}s.`);
+
     return {
       numItems: result.max_items,
       numPages: result.num_pages,

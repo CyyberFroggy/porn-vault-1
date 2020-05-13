@@ -7,41 +7,12 @@ import ffmpeg from "fluent-ffmpeg";
 import { validatePlugins, checkUnusedPlugins } from "./plugins/validate";
 import { printMaxMemory } from "./mem";
 import { validateFFMPEGPaths } from "./config/validate";
-import { ensureTwigsExists, twigsProcess } from "./twigs";
 const sha = require("js-sha512").sha512;
 import args from "./args";
-import { ensureIzzyExists, izzyProcess } from "./izzy";
+import { ensureIzzyExists } from "./izzy";
 import { queueLoop } from "./queue_loop";
-import { ensureGiannaExists, giannaProcess } from "./gianna";
-
-function killProcess(code = 0) {
-  return () => {
-    if (twigsProcess) {
-      logger.log("Killing twigs...");
-      twigsProcess.kill();
-    }
-    if (izzyProcess) {
-      logger.log("Killing izzy...");
-      izzyProcess.kill();
-    }
-    if (giannaProcess) {
-      logger.log("Killing gianna...");
-      giannaProcess.kill();
-    }
-    process.exit(code);
-  };
-}
-
-process.on("exit", killProcess(0));
-process.on("SIGTERM", killProcess(0));
-process.on("SIGINT", killProcess(0));
-process.on("SIGUSR1", killProcess(0));
-process.on("SIGUSR2", killProcess(0));
-process.on("uncaughtException", (e) => {
-  console.log("Uncaught Exception...");
-  console.log(e.stack);
-  killProcess(99)();
-});
+import { ensureGiannaExists } from "./gianna";
+import { applyExitHooks } from "./exit";
 
 export async function onConfigLoad(config: IConfig) {
   validatePlugins(config);
@@ -68,10 +39,10 @@ export async function onConfigLoad(config: IConfig) {
   logger.message("FFPROBE set to " + config.FFPROBE_PATH);
 }
 
-printMaxMemory();
-
 if (!process.env.PREVENT_STARTUP)
   (async () => {
+    printMaxMemory();
+
     await checkConfig();
     const config = getConfig();
 
@@ -99,13 +70,13 @@ if (!process.env.PREVENT_STARTUP)
 
       try {
         let downloadedBins = 0;
-        downloadedBins += await ensureTwigsExists(); // TODO: deprecated
         downloadedBins += await ensureIzzyExists();
         downloadedBins += await ensureGiannaExists();
         if (downloadedBins > 0) {
           logger.success("Binaries downloaded. Please restart.");
           process.exit(0);
         }
+        applyExitHooks();
         startServer();
       } catch (err) {
         logger.log(err);

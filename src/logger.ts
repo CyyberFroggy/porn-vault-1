@@ -20,7 +20,6 @@ enum LogType {
   HTTP = "http",
   MESSAGE = "message",
   SEARCH = "search",
-  TWIGS = "twigs", // TODO: deprecated
   IZZY = "izzy",
   GIANNA = "gianna",
 }
@@ -98,16 +97,11 @@ export const message = (...args: any) => {
   debug("vault:message")(text);
   appendToLog(createItem(LogType.MESSAGE, text));
 };
+// TODO: deprecated soon
 export const search = (...args: any) => {
   const text = merge(...args);
-  debug("vault:twigs")(text);
+  debug("vault:search")(text);
   appendToLog(createItem(LogType.SEARCH, text));
-};
-export const twigs = (...args: any) => {
-  // TODO: deprecated
-  const text = merge(...args);
-  debug("vault:twigs")(text);
-  appendToLog(createItem(LogType.TWIGS, text));
 };
 export const izzy = (...args: any) => {
   const text = merge(...args);

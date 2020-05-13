@@ -7,36 +7,31 @@ import * as logger from "../logger";
 import { ISearchResults } from "./index";
 import argv from "../args";
 import asyncPool from "tiny-async-pool";
+import { Gianna } from "./internal/index";
+import { mapAsync } from "../types/utility";
 
 const PAGE_SIZE = 24;
 
-export async function searchImages(query: string) {
-  const options = extractQueryOptions(query);
-  logger.log(`Searching images for '${options.query}'...`);
-  return Axios.get<ISearchResults>("http://localhost:8000/image", {
-    params: {
-      query: options.query || "",
-      skip: options.page * 24,
-      take: PAGE_SIZE,
-      sort_by: options.sortBy,
-      sort_dir: options.sortDir,
-      favorite: options.favorite ? "true" : undefined,
-      bookmark: options.bookmark ? "true" : undefined,
-      rating: options.rating || 0,
-      include: options.include.join(","),
-      exclude: options.exclude.join(","),
-      actors: options.actors.join(","),
-      scene: options.scenes[0],
-    },
-  });
-}
+export let index!: Gianna.Index<IImageSearchDoc>;
+
+const FIELDS = [
+  "name",
+  "labels",
+  "actors",
+  "studio_name",
+  "scene_name",
+  "actor_names",
+  "label_names",
+];
 
 export interface IImageSearchDoc {
-  id: string;
+  _id: string;
   name: string;
-  added_on: number;
-  actors: { id: string; name: string; aliases: string[] }[];
-  labels: { id: string; name: string; aliases: string[] }[];
+  addedOn: number;
+  actors: string[];
+  labels: string[];
+  actor_names: string[];
+  label_names: string[];
   bookmark: number | null;
   favorite: boolean;
   rating: number;
@@ -47,23 +42,16 @@ export interface IImageSearchDoc {
 
 export async function clearImageIndex() {
   try {
-    await Axios.delete("http://localhost:8000/image");
+    await Axios.delete("http://localhost:8000/index/images");
   } catch (error) {
-    logger.error("Error while resetting twigs images");
+    logger.error("Error while resetting gianna images");
     logger.log(error.message);
     throw error;
   }
 }
 
-export async function updateImageDoc(image: Image) {
-  return Axios.put(
-    `http://localhost:8000/image/${image._id}`,
-    await createImageSearchDoc(image)
-  );
-}
-
-export async function removeImageDoc(imageId: string) {
-  return Axios.delete("http://localhost:8000/image/" + imageId);
+export async function updateImages(images: Image[]) {
+  return index.update(await mapAsync(images, createImageSearchDoc), FIELDS);
 }
 
 const blacklist = [
@@ -122,12 +110,14 @@ export async function indexImages(images: Image[]) {
 export async function addImageSearchDocs(docs: IImageSearchDoc[]) {
   logger.log(`Indexing ${docs.length} items...`);
   const timeNow = +new Date();
-  const res = await Axios.post("http://localhost:8000/image", docs);
-  logger.log(`Twigs indexing done in ${(Date.now() - timeNow) / 1000}s`);
+  const res = await index.index(docs, FIELDS);
+  logger.log(`Gianna indexing done in ${(Date.now() - timeNow) / 1000}s`);
   return res;
 }
 
 export async function buildImageIndex() {
+  index = await Gianna.createIndex("images");
+
   const timeNow = +new Date();
   const loader = ora("Building image index...").start();
 
@@ -135,6 +125,8 @@ export async function buildImageIndex() {
 
   loader.succeed(`Build done in ${(Date.now() - timeNow) / 1000}s.`);
   log.log(`Index size: ${res} items`);
+
+  return index;
 }
 
 export async function createImageSearchDoc(
@@ -144,19 +136,13 @@ export async function createImageSearchDoc(
   const actors = await Image.getActors(image);
 
   return {
-    id: image._id,
-    added_on: image.addedOn,
+    _id: image._id,
+    addedOn: image.addedOn,
     name: image.name,
-    labels: labels.map((l) => ({
-      id: l._id,
-      name: l.name,
-      aliases: l.aliases,
-    })),
-    actors: actors.map((a) => ({
-      id: a._id,
-      name: a.name,
-      aliases: a.aliases,
-    })),
+    labels: labels.map((l) => l._id),
+    actors: actors.map((a) => a._id),
+    actor_names: actors.map((a) => [a.name, ...a.aliases]).flat(),
+    label_names: labels.map((l) => [l.name, ...l.aliases]).flat(),
     rating: image.rating || 0,
     bookmark: image.bookmark,
     favorite: image.favorite,
@@ -164,4 +150,153 @@ export async function createImageSearchDoc(
     scene_name: null, // TODO:
     studio_name: null, // TODO:
   };
+}
+
+export async function searchImages(query: string, shuffleSeed = "default") {
+  const options = extractQueryOptions(query);
+  logger.log(`Searching scenes for '${options.query}'...`);
+
+  let sort = undefined as Gianna.ISortOptions | undefined;
+  let filter = {
+    type: "AND",
+    children: [],
+  } as Gianna.IFilterTreeGrouping;
+
+  if (options.favorite) {
+    filter.children.push({
+      condition: {
+        operation: "=",
+        property: "favorite",
+        type: "boolean",
+        value: true,
+      },
+    });
+  }
+
+  if (options.bookmark) {
+    filter.children.push({
+      condition: {
+        operation: ">",
+        property: "bookmark",
+        type: "number",
+        value: 0,
+      },
+    });
+  }
+
+  if (options.rating) {
+    filter.children.push({
+      condition: {
+        operation: ">",
+        property: "rating",
+        type: "number",
+        value: options.rating - 1,
+      },
+    });
+  }
+
+  if (options.include.length) {
+    filter.children.push({
+      type: "AND",
+      children: options.include.map((labelId) => ({
+        condition: {
+          operation: "?",
+          property: "labels",
+          type: "array",
+          value: labelId,
+        },
+      })),
+    });
+  }
+
+  if (options.actors.length) {
+    filter.children.push({
+      type: "AND",
+      children: options.actors.map((labelId) => ({
+        condition: {
+          operation: "?",
+          property: "actors",
+          type: "array",
+          value: labelId,
+        },
+      })),
+    });
+  }
+
+  if (options.exclude.length) {
+    filter.children.push({
+      type: "AND",
+      children: options.exclude.map((labelId) => ({
+        type: "NOT",
+        children: [
+          {
+            condition: {
+              operation: "?",
+              property: "labels",
+              type: "array",
+              value: labelId,
+            },
+          },
+        ],
+      })),
+    });
+  }
+
+  if (options.scenes.length) {
+    filter.children.push({
+      type: "OR",
+      children: options.exclude.map((sceneId) => ({
+        condition: {
+          operation: "=",
+          property: "scene",
+          type: "string",
+          value: sceneId,
+        },
+      })),
+    });
+  }
+
+  if (options.studios.length) {
+    filter.children.push({
+      type: "OR",
+      children: options.exclude.map((studioId) => ({
+        condition: {
+          operation: "=",
+          property: "studio",
+          type: "string",
+          value: studioId,
+        },
+      })),
+    });
+  }
+
+  if (options.sortBy) {
+    if (options.sortBy === "$shuffle") {
+      sort = {
+        sort_by: "$shuffle",
+        sort_asc: false,
+        sort_type: shuffleSeed,
+      };
+    } else {
+      const sortType = {
+        name: "string",
+        addedOn: "number",
+        rating: "number",
+        bookmark: "number",
+      }[options.sortBy];
+      sort = {
+        sort_by: options.sortBy,
+        sort_asc: options.sortDir === "asc",
+        sort_type: sortType,
+      };
+    }
+  }
+
+  return index.search({
+    query: options.query,
+    skip: options.skip || options.page * 24,
+    take: options.take || options.take || PAGE_SIZE,
+    sort,
+    filter,
+  });
 }

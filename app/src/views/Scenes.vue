@@ -162,7 +162,7 @@
       <NoResults v-else-if="!fetchLoader && !numResults" />
       <Loading v-else />
     </div>
-    <div v-if="numResults && numPages > 1">
+    <div class="mt-3" v-if="numResults && numPages > 1">
       <v-pagination
         @input="loadPage"
         v-model="page"
@@ -581,9 +581,9 @@ export default class SceneList extends mixins(DrawerMixin) {
     localStorage.setItem("pm_sceneFavorite", "" + newVal);
     this.page = 1;
     this.scenes = [];
-    this.loadPage(this.page);
     this.numResults = 0;
     this.numPages = 0;
+    this.loadPage(this.page);
   }
 
   @Watch("bookmarksOnly")
@@ -591,9 +591,9 @@ export default class SceneList extends mixins(DrawerMixin) {
     localStorage.setItem("pm_sceneBookmark", "" + newVal);
     this.page = 1;
     this.scenes = [];
-    this.loadPage(this.page);
     this.numResults = 0;
     this.numPages = 0;
+    this.loadPage(this.page);
   }
 
   @Watch("sortDir")
@@ -601,9 +601,9 @@ export default class SceneList extends mixins(DrawerMixin) {
     localStorage.setItem("pm_sceneSortDir", newVal);
     this.page = 1;
     this.scenes = [];
-    this.loadPage(this.page);
     this.numResults = 0;
     this.numPages = 0;
+    this.loadPage(this.page);
   }
 
   @Watch("sortBy")
@@ -611,18 +611,18 @@ export default class SceneList extends mixins(DrawerMixin) {
     localStorage.setItem("pm_sceneSortBy", newVal);
     this.page = 1;
     this.scenes = [];
-    this.loadPage(this.page);
     this.numResults = 0;
     this.numPages = 0;
+    this.loadPage(this.page);
   }
 
   @Watch("selectedLabels")
   onLabelChange() {
     this.page = 1;
     this.scenes = [];
-    this.loadPage(this.page);
     this.numResults = 0;
     this.numPages = 0;
+    this.loadPage(this.page);
   }
 
   @Watch("selectedActorIds", { deep: true })
@@ -763,6 +763,7 @@ export default class SceneList extends mixins(DrawerMixin) {
 
   loadPage(page: number) {
     this.fetchLoader = true;
+    this.selectedScenes = [];
 
     this.fetchPage(page)
       .then(result => {

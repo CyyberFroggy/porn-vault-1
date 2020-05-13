@@ -8,7 +8,7 @@ import { getConfig } from "../../config/index";
 import { indices } from "../../search/index";
 import { createActorSearchDoc } from "../../search/actor";
 import { onActorCreate } from "../../plugin_events/actor";
-import { updateImageDoc, isBlacklisted } from "../../search/image";
+import { isBlacklisted, updateImages } from "../../search/image";
 import { actorCollection } from "../../database";
 import LabelledItem from "../../types/labelled_item";
 import ActorReference from "../../types/actor_reference";
@@ -121,7 +121,7 @@ export default {
             (await Image.getActors(image)).map((l) => l._id).concat(actor._id)
           );
           try {
-            await updateImageDoc(image);
+            await updateImages([image]);
           } catch (error) {
             logger.error(error.message);
           }

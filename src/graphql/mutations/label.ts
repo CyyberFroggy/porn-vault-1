@@ -4,8 +4,7 @@ import Image from "../../types/image";
 import { Dictionary } from "../../types/utility";
 import { isMatchingItem } from "../../extractor";
 import * as logger from "../../logger";
-// import { updateSceneDoc } from "../../search/scene";
-import { updateImageDoc, isBlacklisted } from "../../search/image";
+import { isBlacklisted, updateImages } from "../../search/image";
 import LabelledItem from "../../types/labelled_item";
 import { labelCollection } from "../../database";
 import { updateScenes } from "../../search/scene";
@@ -49,7 +48,7 @@ export default {
         const labels = (await Image.getLabels(image)).map((l) => l._id);
         labels.push(label._id);
         await Image.setLabels(image, labels);
-        await updateImageDoc(image);
+        await updateImages([image]);
         logger.log(`Updated labels of ${image._id}.`);
       }
     }

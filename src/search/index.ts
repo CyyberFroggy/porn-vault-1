@@ -6,8 +6,6 @@ import { buildImageIndex } from "./image";
 import { buildActorIndex } from "./actor";
 import { buildStudioIndex } from "./studio";
 import { buildMovieIndex } from "./movie";
-import Axios from "axios";
-import { Gianna } from "./internal";
 import { buildSceneIndex } from "./scene";
 
 export interface ISearchResults {
@@ -32,13 +30,4 @@ export async function buildIndices() {
   await buildMovieIndex();
   await buildStudioIndex();
   await buildImageIndex();
-}
-
-export async function twigsVersion() {
-  try {
-    const res = await Axios.get(`http://localhost:8000/`);
-    return res.data.version as string;
-  } catch (error) {
-    return null;
-  }
 }
