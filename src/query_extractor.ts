@@ -1,13 +1,13 @@
-export enum SortTarget {
+export enum SortTarget { // TODO: probably deprecated as well soon
   RELEVANCE = "relevance",
   RATING = "rating",
   DATE = "releaseDate",
   ADDED_ON = "addedOn",
-  VIEWS = "views",
+  VIEWS = "numViews",
   DURATION = "duration",
   ALPHABETIC = "alpha", // TODO: deprecated
   NAME = "name",
-  NUM_SCENES = "scenes",
+  NUM_SCENES = "numScenes",
   SIZE = "size",
   RESOLUTION = "resolution",
   AGE = "age",

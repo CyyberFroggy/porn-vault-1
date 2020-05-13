@@ -4,8 +4,6 @@ import ora from "ora";
 import Axios from "axios";
 import extractQueryOptions from "../query_extractor";
 import * as logger from "../logger";
-import { ISearchResults } from "./index";
-import argv from "../args";
 import asyncPool from "tiny-async-pool";
 import { Gianna } from "./internal/index";
 import { mapAsync } from "../types/utility";
@@ -18,10 +16,10 @@ const FIELDS = [
   "name",
   "labels",
   "actors",
-  "studio_name",
-  "scene_name",
-  "actor_names",
-  "label_names",
+  "studioName",
+  "sceneName",
+  "actorNames",
+  "labelNames",
 ];
 
 export interface IImageSearchDoc {
@@ -30,14 +28,14 @@ export interface IImageSearchDoc {
   addedOn: number;
   actors: string[];
   labels: string[];
-  actor_names: string[];
-  label_names: string[];
+  actorNames: string[];
+  labelNames: string[];
   bookmark: number | null;
   favorite: boolean;
   rating: number;
   scene: string | null;
-  scene_name: string | null;
-  studio_name: string | null;
+  sceneName: string | null;
+  studioName: string | null;
 }
 
 export async function clearImageIndex() {
@@ -141,20 +139,20 @@ export async function createImageSearchDoc(
     name: image.name,
     labels: labels.map((l) => l._id),
     actors: actors.map((a) => a._id),
-    actor_names: actors.map((a) => [a.name, ...a.aliases]).flat(),
-    label_names: labels.map((l) => [l.name, ...l.aliases]).flat(),
+    actorNames: actors.map((a) => [a.name, ...a.aliases]).flat(),
+    labelNames: labels.map((l) => [l.name, ...l.aliases]).flat(),
     rating: image.rating || 0,
     bookmark: image.bookmark,
     favorite: image.favorite,
     scene: image.scene,
-    scene_name: null, // TODO:
-    studio_name: null, // TODO:
+    sceneName: null, // TODO:
+    studioName: null, // TODO:
   };
 }
 
 export async function searchImages(query: string, shuffleSeed = "default") {
   const options = extractQueryOptions(query);
-  logger.log(`Searching scenes for '${options.query}'...`);
+  logger.log(`Searching images for '${options.query}'...`);
 
   let sort = undefined as Gianna.ISortOptions | undefined;
   let filter = {

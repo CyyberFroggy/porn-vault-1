@@ -1,4 +1,3 @@
-import { actorIndex } from "./actor";
 import { studioIndex } from "./studio";
 import { movieIndex } from "./movie";
 
@@ -19,7 +18,6 @@ export interface ISearchResults {
 }
 
 export const indices = {
-  actors: actorIndex,
   studios: studioIndex,
   movies: movieIndex,
 };

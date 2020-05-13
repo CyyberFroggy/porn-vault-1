@@ -213,7 +213,7 @@ import { mixins } from "vue-class-component";
     ImageUploader
   }
 })
-export default class ImagesView extends mixins(DrawerMixin) {
+export default class ImageList extends mixins(DrawerMixin) {
   get showSidenav() {
     return contextModule.showSidenav;
   }
@@ -484,8 +484,8 @@ export default class ImagesView extends mixins(DrawerMixin) {
 
       const result = await ApolloClient.query({
         query: gql`
-          query($query: String) {
-            getImages(query: $query) {
+          query($query: String, $seed: String) {
+            getImages(query: $query, seed: $seed) {
               numItems
               numPages
               items {
@@ -515,7 +515,8 @@ export default class ImagesView extends mixins(DrawerMixin) {
           ${actorFragment}
         `,
         variables: {
-          query
+          query,
+          seed: localStorage.getItem("pm_seed") || "default"
         }
       });
 

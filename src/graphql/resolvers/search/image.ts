@@ -6,7 +6,7 @@ export async function getImages(
   _,
   {
     query,
-    auto,
+    auto, // TODO: deprecated?
     seed,
   }: { query: string | undefined; auto?: boolean | null; seed?: string }
 ) {

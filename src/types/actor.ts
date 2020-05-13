@@ -65,6 +65,10 @@ export default class Actor {
       .sort((a, b) => a.date - b.date);
   }
 
+  static calculateScore(actor: Actor, numViews: number, numScenes: number) {
+    return numScenes / 5 + numViews + +actor.favorite * 5 + actor.rating;
+  }
+
   static async getTopActors() {
     const actors = await Actor.getAll();
 

@@ -5,8 +5,11 @@ import { Dictionary } from "../../types/utility";
 import { isSingleWord, isMatchingItem } from "../../extractor";
 import * as logger from "../../logger";
 import { getConfig } from "../../config/index";
-import { indices } from "../../search/index";
-import { createActorSearchDoc } from "../../search/actor";
+import {
+  indexActors,
+  updateActors,
+  index as actorIndex,
+} from "../../search/actor";
 import { onActorCreate } from "../../plugin_events/actor";
 import { isBlacklisted, updateImages } from "../../search/image";
 import { actorCollection } from "../../database";
@@ -31,7 +34,7 @@ type IActorUpdateOpts = Partial<{
 }>;
 
 async function runActorPlugins(ids: string[]) {
-  const changedActors = [] as Actor[];
+  const updatedActors = [] as Actor[];
   for (const id of ids) {
     let actor = await Actor.getById(id);
 
@@ -43,14 +46,15 @@ async function runActorPlugins(ids: string[]) {
 
       await Actor.setLabels(actor, labels);
       await actorCollection.upsert(actor._id, actor);
-      indices.actors.update(actor._id, await createActorSearchDoc(actor));
 
-      changedActors.push(actor);
+      updatedActors.push(actor);
     } else {
       logger.warn(`Actor ${id} not found`);
     }
+
+    await updateActors(updatedActors);
   }
-  return changedActors;
+  return updatedActors;
 }
 
 export default {
@@ -130,7 +134,7 @@ export default {
       }
     }
 
-    indices.actors.add(await createActorSearchDoc(actor));
+    await indexActors([actor]);
     return actor;
   },
 
@@ -189,11 +193,12 @@ export default {
         }
 
         await actorCollection.upsert(actor._id, actor);
-        indices.actors.update(actor._id, await createActorSearchDoc(actor));
         updatedActors.push(actor);
       } else {
         throw new Error(`Actor ${id} not found`);
       }
+
+      await updateActors(updatedActors);
     }
 
     return updatedActors;
@@ -205,7 +210,7 @@ export default {
 
       if (actor) {
         await Actor.remove(actor);
-        indices.actors.remove(actor._id);
+        await actorIndex.remove([actor._id]);
         await LabelledItem.removeByItem(actor._id);
         await ActorReference.removeByActor(actor._id);
       }

@@ -18,7 +18,7 @@ import Label from "../types/label";
 import Actor from "../types/actor";
 import { onActorCreate } from "./actor";
 import { indices } from "../search/index";
-import { createActorSearchDoc } from "../search/actor";
+import { indexActors } from "../search/actor";
 import { indexImages } from "../search/image";
 import {
   imageCollection,
@@ -143,7 +143,7 @@ export async function onSceneCreate(
           logger.error(error.message);
         }
         await actorCollection.upsert(actor._id, actor);
-        indices.actors.add(await createActorSearchDoc(actor));
+        await indexActors([actor]);
         logger.log("Created actor " + actor.name);
       }
     }
