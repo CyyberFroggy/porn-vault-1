@@ -11,7 +11,11 @@ import Jimp from "jimp";
 import { statAsync, unlinkAsync, copyFileAsync } from "../../fs/async";
 import { getConfig } from "../../config";
 import Studio from "../../types/studio";
-import { indexImages, index as imageIndex } from "../../search/image";
+import {
+  indexImages,
+  index as imageIndex,
+  updateImages,
+} from "../../search/image";
 import { imageCollection } from "../../database";
 import LabelledItem from "../../types/labelled_item";
 import ActorReference from "../../types/actor_reference";
@@ -280,6 +284,8 @@ export default {
       } else {
         throw new Error(`Image ${id} not found`);
       }
+
+      await updateImages(updatedImages);
     }
 
     return updatedImages;

@@ -32,7 +32,7 @@ type ISceneUpdateOpts = Partial<{
 }>;
 
 async function runScenePlugins(ids: string[]) {
-  const changedScenes = [] as Scene[];
+  const updatedScenes = [] as Scene[];
   for (const id of ids) {
     let scene = await Scene.getById(id);
 
@@ -46,12 +46,13 @@ async function runScenePlugins(ids: string[]) {
       await Scene.setLabels(scene, labels);
       await Scene.setActors(scene, actors);
       await sceneCollection.upsert(scene._id, scene);
-      await updateScenes([scene]);
 
-      changedScenes.push(scene);
+      updatedScenes.push(scene);
     }
+
+    await updateScenes(updatedScenes);
   }
-  return changedScenes;
+  return updatedScenes;
 }
 
 export default {
@@ -238,8 +239,9 @@ export default {
 
         await sceneCollection.upsert(scene._id, scene);
         updatedScenes.push(scene);
-        await updateScenes([scene]);
       }
+
+      await updateScenes(updatedScenes);
     }
 
     return updatedScenes;

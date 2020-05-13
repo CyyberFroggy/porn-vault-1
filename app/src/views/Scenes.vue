@@ -110,7 +110,7 @@
     <div v-else>
       <div class="mb-2 d-flex align-center">
         <div class="mr-3">
-          <span class="display-1 font-weight-bold mr-2">{{ numResults }}</span>
+          <span class="display-1 font-weight-bold mr-2">{{ fetchLoader ? "-" : numResults }}</span>
           <span class="title font-weight-regular">scenes found</span>
         </div>
         <v-btn :loading="fetchingRandom" @click="getRandom" icon>
