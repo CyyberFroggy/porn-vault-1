@@ -77,17 +77,29 @@
       </v-container>
     </v-navigation-drawer>
 
-    <div v-if="!fetchLoader">
-      <div class="d-flex align-center">
-        <h1 class="font-weight-light mr-3">Movies</h1>
-        <v-btn class="mr-2" @click="openCreateDialog" icon>
-          <v-icon>mdi-plus</v-icon>
+    <div class="text-center" v-if="fetchError">
+      <div>There was an error</div>
+      <v-btn class="mt-2" @click="loadPage(page)">Try again</v-btn>
+    </div>
+    <div v-else>
+      <div class="mb-2 d-flex align-center">
+        <div class="mr-3">
+          <span class="display-1 font-weight-bold mr-2">{{ fetchLoader ? "-" : numResults }}</span>
+          <span class="title font-weight-regular">movies found</span>
+        </div>
+        <v-btn :loading="fetchingRandom" @click="getRandom" icon>
+          <v-icon>mdi-shuffle-variant</v-icon>
         </v-btn>
-        <v-btn @click="bulkImportDialog = true" icon>
-          <v-icon>mdi-file-import</v-icon>
-        </v-btn>
+        <v-tooltip right>
+          <template v-slot:activator="{ on }">
+            <v-btn v-on="on" :disabled="sortBy != '$shuffle'" @click="rerollSeed" icon>
+              <v-icon>mdi-dice-3-outline</v-icon>
+            </v-btn>
+          </template>
+          <span>Reroll shuffle seed</span>
+        </v-tooltip>
       </div>
-      <v-row>
+      <v-row v-if="!fetchLoader && numResults">
         <v-col
           class="pa-1"
           v-for="(movie, i) in movies"
@@ -106,10 +118,17 @@
           />
         </v-col>
       </v-row>
+      <NoResults v-else-if="!fetchLoader && !numResults" />
+      <Loading v-else />
     </div>
-    <div v-else class="text-center">
-      <p>Loading...</p>
-      <v-progress-circular indeterminate></v-progress-circular>
+    <div class="mt-3" v-if="numResults && numPages > 1">
+      <v-pagination
+        @input="loadPage"
+        v-model="page"
+        :total-visible="7"
+        :disabled="fetchLoader"
+        :length="numPages"
+      ></v-pagination>
     </div>
 
     <v-dialog scrollable v-model="createMovieDialog" max-width="400px">
@@ -169,23 +188,6 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-
-    <infinite-loading :identifier="infiniteId" @infinite="infiniteHandler">
-      <div slot="no-results">
-        <v-icon large>mdi-close</v-icon>
-        <div>Nothing found!</div>
-      </div>
-
-      <div slot="spinner">
-        <v-progress-circular indeterminate></v-progress-circular>
-        <div>Loading...</div>
-      </div>
-
-      <div slot="no-more">
-        <v-icon large>mdi-emoticon-wink</v-icon>
-        <div>That's all!</div>
-      </div>
-    </infinite-loading>
   </v-container>
 </template>
 
@@ -218,8 +220,17 @@ export default class MovieList extends mixins(DrawerMixin) {
     return contextModule.showSidenav;
   }
 
+  rerollSeed() {
+    const seed = Math.random().toString(36);
+    localStorage.setItem("pm_seed", seed);
+    if (this.sortBy === "$shuffle") this.loadPage(this.page);
+    return seed;
+  }
+
   movies = [] as IMovie[];
   fetchLoader = false;
+  fetchError = false;
+  fetchingRandom = false;
 
   moviesBulkText = "" as string | null;
   bulkImportDialog = false;
@@ -268,9 +279,10 @@ export default class MovieList extends mixins(DrawerMixin) {
     localStorage.setItem("pm_movieInclude", val.include.join(","));
     localStorage.setItem("pm_movieExclude", val.exclude.join(","));
 
-    this.page = 0;
+    this.page = 1;
     this.movies = [];
-    this.infiniteId++;
+    this.numResults = 0;
+    this.numPages = 0;
   }
 
   validCreation = false;
@@ -282,7 +294,9 @@ export default class MovieList extends mixins(DrawerMixin) {
   movieNameRules = [v => (!!v && !!v.length) || "Invalid movie name"];
 
   query = localStorage.getItem("pm_movieQuery") || "";
-  page = 0;
+  page = 1;
+  numResults = 0;
+  numPages = 0;
 
   sortDir = localStorage.getItem("pm_movieSortDir") || "desc";
   sortDirItems = [
@@ -304,7 +318,7 @@ export default class MovieList extends mixins(DrawerMixin) {
     },
     {
       text: "A-Z",
-      value: "alpha"
+      value: "name"
     },
     {
       text: "Added to collection",
@@ -321,15 +335,21 @@ export default class MovieList extends mixins(DrawerMixin) {
     {
       text: "Bookmarked",
       value: "bookmark"
+    },
+    {
+      text: "# scenes",
+      value: "numScenes"
+    },
+    {
+      text: "Random",
+      value: "$shuffle"
     }
-    /* TODO: amount of scenes */
   ];
 
   favoritesOnly = localStorage.getItem("pm_movieFavorite") == "true";
   bookmarksOnly = localStorage.getItem("pm_movieBookmark") == "true";
   ratingFilter = parseInt(localStorage.getItem("pm_movieRating") || "0");
 
-  infiniteId = 0;
   resetTimeout = null as NodeJS.Timeout | null;
 
   /* useDVDCoverRatio = (() => {
@@ -425,41 +445,51 @@ export default class MovieList extends mixins(DrawerMixin) {
   @Watch("ratingFilter", {})
   onRatingChange(newVal: number) {
     localStorage.setItem("pm_movieRating", newVal.toString());
-    this.page = 0;
+    this.page = 1;
     this.movies = [];
-    this.infiniteId++;
+    this.numResults = 0;
+    this.numPages = 0;
+    this.loadPage(this.page);
   }
 
   @Watch("favoritesOnly")
   onFavoriteChange(newVal: boolean) {
     localStorage.setItem("pm_movieFavorite", "" + newVal);
-    this.page = 0;
+    this.page = 1;
     this.movies = [];
-    this.infiniteId++;
+    this.numResults = 0;
+    this.numPages = 0;
+    this.loadPage(this.page);
   }
 
   @Watch("bookmarksOnly")
   onBookmarkChange(newVal: boolean) {
     localStorage.setItem("pm_movieBookmark", "" + newVal);
-    this.page = 0;
+    this.page = 1;
     this.movies = [];
-    this.infiniteId++;
+    this.numResults = 0;
+    this.numPages = 0;
+    this.loadPage(this.page);
   }
 
   @Watch("sortDir")
   onSortDirChange(newVal: string) {
     localStorage.setItem("pm_movieSortDir", newVal);
-    this.page = 0;
+    this.page = 1;
     this.movies = [];
-    this.infiniteId++;
+    this.numResults = 0;
+    this.numPages = 0;
+    this.loadPage(this.page);
   }
 
   @Watch("sortBy")
   onSortChange(newVal: string) {
     localStorage.setItem("pm_movieSortBy", newVal);
-    this.page = 0;
+    this.page = 1;
     this.movies = [];
-    this.infiniteId++;
+    this.numResults = 0;
+    this.numPages = 0;
+    this.loadPage(this.page);
   }
 
   @Watch("query")
@@ -471,32 +501,39 @@ export default class MovieList extends mixins(DrawerMixin) {
     localStorage.setItem("pm_movieQuery", newVal || "");
 
     this.waiting = true;
-    this.page = 0;
+    this.page = 1;
     this.movies = [];
+    this.numResults = 0;
+    this.numPages = 0;
 
     this.resetTimeout = setTimeout(() => {
       this.waiting = false;
-      this.infiniteId++;
+      this.loadPage(this.page);
     }, 500);
   }
 
-  infiniteHandler($state) {
-    this.fetchPage()
-      .then(items => {
-        if (items.length) {
-          this.page++;
-          this.movies.push(...items);
-          $state.loaded();
-        } else {
-          $state.complete();
-        }
+  @Watch("selectedLabels")
+  onLabelChange() {
+    this.page = 1;
+    this.movies = [];
+    this.numResults = 0;
+    this.numPages = 0;
+    this.loadPage(this.page);
+  }
+
+  getRandom() {
+    this.fetchingRandom = true;
+    this.fetchPage(1, 1, true)
+      .then(result => {
+        // @ts-ignore
+        this.$router.push(`/movie/${result.items[0]._id}`);
       })
       .catch(err => {
-        $state.error();
+        this.fetchingRandom = false;
       });
   }
 
-  async fetchPage() {
+  async fetchPage(page: number, take = 24, random?: boolean) {
     try {
       let include = "";
       let exclude = "";
@@ -507,9 +544,10 @@ export default class MovieList extends mixins(DrawerMixin) {
       if (this.selectedLabels.exclude.length)
         exclude = "exclude:" + this.selectedLabels.exclude.join(",");
 
-      const query = `query:'${this.query || ""}' ${include} ${exclude} page:${
-        this.page
-      } sortDir:${this.sortDir} sortBy:${this.sortBy} favorite:${
+      const query = `query:'${this.query ||
+        ""}' take:${take} ${include} ${exclude} page:${this.page - 1} sortDir:${
+        this.sortDir
+      } sortBy:${random ? "$shuffle" : this.sortBy} favorite:${
         this.favoritesOnly ? "true" : "false"
       } bookmark:${this.bookmarksOnly ? "true" : "false"} rating:${
         this.ratingFilter
@@ -519,13 +557,17 @@ export default class MovieList extends mixins(DrawerMixin) {
         query: gql`
           query($query: String) {
             getMovies(query: $query) {
-              ...MovieFragment
-              actors {
-                ...ActorFragment
+              items {
+                ...MovieFragment
+                actors {
+                  ...ActorFragment
+                }
+                scenes {
+                  _id
+                }
               }
-              scenes {
-                _id
-              }
+              numItems
+              numPages
             }
           }
           ${movieFragment}
@@ -540,6 +582,29 @@ export default class MovieList extends mixins(DrawerMixin) {
     } catch (err) {
       throw err;
     }
+  }
+
+  loadPage(page: number) {
+    this.fetchLoader = true;
+
+    this.fetchPage(page)
+      .then(result => {
+        this.fetchError = false;
+        this.movies = result.items;
+        this.numResults = result.numItems;
+        this.numPages = result.numPages;
+      })
+      .catch(err => {
+        console.error(err);
+        this.fetchError = true;
+      })
+      .finally(() => {
+        this.fetchLoader = false;
+      });
+  }
+
+  mounted() {
+    this.loadPage(1);
   }
 
   beforeMount() {

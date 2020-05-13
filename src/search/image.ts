@@ -1,5 +1,4 @@
 import Image from "../types/image";
-import * as log from "../logger";
 import ora from "ora";
 import Axios from "axios";
 import extractQueryOptions from "../query_extractor";
@@ -122,7 +121,7 @@ export async function buildImageIndex() {
   const res = await indexImages(await Image.getAll());
 
   loader.succeed(`Build done in ${(Date.now() - timeNow) / 1000}s.`);
-  log.log(`Index size: ${res} items`);
+  logger.log(`Index size: ${res} items`);
 
   return index;
 }

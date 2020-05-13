@@ -18,16 +18,16 @@ export interface ISceneSearchDoc {
   name: string;
   actors: string[];
   labels: string[];
-  actor_names: string[];
-  label_names: string[];
+  actorNames: string[];
+  labelNames: string[];
   rating: number;
   bookmark: number | null;
   favorite: boolean;
-  views: number;
+  numViews: number;
   releaseDate: number | null;
   duration: number | null;
   studio: string | null;
-  studio_name: string | null;
+  studioName: string | null;
   resolution: number | null;
   size: number | null;
 }
@@ -42,18 +42,18 @@ async function createSceneSearchDoc(scene: Scene): Promise<ISceneSearchDoc> {
     name: scene.name,
     labels: labels.map((l) => l._id),
     actors: actors.map((a) => a._id),
-    actor_names: actors.map((a) => [a.name, ...a.aliases]).flat(),
-    label_names: labels.map((l) => [l.name, ...l.aliases]).flat(),
+    actorNames: actors.map((a) => [a.name, ...a.aliases]).flat(),
+    labelNames: labels.map((l) => [l.name, ...l.aliases]).flat(),
     rating: scene.rating,
     bookmark: scene.bookmark,
     favorite: scene.favorite,
-    views: await SceneView.getCount(scene._id),
+    numViews: await SceneView.getCount(scene._id),
     duration: scene.meta.duration,
     releaseDate: scene.releaseDate,
     studio: scene.studio,
     resolution: scene.meta.dimensions ? scene.meta.dimensions.height : 0,
     size: scene.meta.size,
-    studio_name: scene.studio
+    studioName: scene.studio
       ? ((await Studio.getById(scene.studio)) || { name: null }).name
       : null,
   };
@@ -63,9 +63,9 @@ const FIELDS = [
   "name",
   "labels",
   "actors",
-  "studio_name",
-  "actor_names",
-  "label_names",
+  "studioName",
+  "actorNames",
+  "labelNames",
 ];
 
 async function addSceneSearchDocs(docs: ISceneSearchDoc[]) {
@@ -239,8 +239,8 @@ export async function searchScenes(query: string, shuffleSeed = "default") {
         name: "string",
         rating: "number",
         bookmark: "number",
-        num_watches: "number",
-        release_date: "number",
+        numViews: "number",
+        releaseDate: "number",
         duration: "number",
         resolution: "number",
         size: "number",

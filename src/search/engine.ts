@@ -1,3 +1,7 @@
+//
+// TODO: deprecated
+//
+
 import { tokenize } from "./tokenize";
 import * as logger from "../logger";
 
@@ -15,7 +19,7 @@ function applyFilters<T>(
   for (const doc of docs) {
     const item = items[doc.id];
     if (!item) continue;
-    if (filters.every(f => f(item))) result.push(doc);
+    if (filters.every((f) => f(item))) result.push(doc);
   }
   return result;
 }
@@ -61,7 +65,7 @@ export class SearchIndex<T> {
 
     for (const key in this.tokens) {
       const arr = this.tokens[key];
-      this.tokens[key] = arr.filter(s => s != id);
+      this.tokens[key] = arr.filter((s) => s != id);
     }
   }
 
@@ -125,14 +129,14 @@ export class SearchIndex<T> {
         if (scores[id] > 0)
           foundDocs.push({
             id: this.idMap[id],
-            score: scores[id]
+            score: scores[id],
           });
       }
     } else {
       logger.search(`No query: getting all items`);
-      foundDocs = Object.keys(this.items).map(id => ({
+      foundDocs = Object.keys(this.items).map((id) => ({
         id,
-        score: 1
+        score: 1,
       }));
     }
 

@@ -30,7 +30,7 @@ import {
 } from "../database/index";
 import Movie from "../types/movie";
 import { onMovieCreate } from "./movie";
-import { createMovieSearchDoc } from "../search/movie";
+import { indexMovies } from "../search/movie";
 import { createStudioSearchDoc } from "../search/studio";
 import SceneView from "../types/watch";
 
@@ -192,7 +192,7 @@ export async function onSceneCreate(
       const movie = <Movie>await Movie.getById(movieId);
       const sceneIds = (await Movie.getScenes(movie)).map((sc) => sc._id);
       await Movie.setScenes(movie, sceneIds.concat(scene._id));
-      indices.movies.update(movie._id, await createMovieSearchDoc(movie));
+      await indexMovies([movie]);
     } else if (config.CREATE_MISSING_MOVIES) {
       let movie = new Movie(pluginResult.movie);
 
@@ -207,7 +207,7 @@ export async function onSceneCreate(
       logger.log("Created movie " + movie.name);
       await Movie.setScenes(movie, [scene._id]);
       logger.log(`Attached ${scene.name} to movie ${movie.name}`);
-      indices.movies.add(await createMovieSearchDoc(movie));
+      await indexMovies([movie]);
     }
   }
 

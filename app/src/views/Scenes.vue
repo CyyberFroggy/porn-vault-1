@@ -389,7 +389,7 @@ export default class SceneList extends mixins(DrawerMixin) {
     },
     {
       text: "Views",
-      value: "views"
+      value: "numViews"
     },
     {
       text: "Duration",

@@ -123,9 +123,7 @@ export default (query?: string) => {
         options[operation] = value == "true";
         break;
       case "sortBy":
-        if (Object.values(SortTarget).includes(<SortTarget>value))
-          options[operation] = <SortTarget>value;
-        else throw `Query error: Unsupported sort target '${value}'`;
+        options[operation] = <SortTarget>value;
         break;
       case "sortDir":
         if (["asc", "desc"].includes(value))
