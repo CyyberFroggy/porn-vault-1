@@ -12,6 +12,7 @@ const sha = require("js-sha512").sha512;
 import args from "./args";
 import { ensureIzzyExists, izzyProcess } from "./izzy";
 import { queueLoop } from "./queue_loop";
+import { ensureGiannaExists, giannaProcess } from "./gianna";
 
 function killProcess(code = 0) {
   return () => {
@@ -22,6 +23,10 @@ function killProcess(code = 0) {
     if (izzyProcess) {
       logger.log("Killing izzy...");
       izzyProcess.kill();
+    }
+    if (giannaProcess) {
+      logger.log("Killing gianna...");
+      giannaProcess.kill();
     }
     process.exit(code);
   };
@@ -94,8 +99,9 @@ if (!process.env.PREVENT_STARTUP)
 
       try {
         let downloadedBins = 0;
-        downloadedBins += await ensureTwigsExists();
+        downloadedBins += await ensureTwigsExists(); // TODO: deprecated
         downloadedBins += await ensureIzzyExists();
+        downloadedBins += await ensureGiannaExists();
         if (downloadedBins > 0) {
           logger.success("Binaries downloaded. Please restart.");
           process.exit(0);

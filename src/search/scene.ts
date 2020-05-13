@@ -6,6 +6,7 @@ import extractQueryOptions from "../query_extractor";
 import argv from "../args";
 import SceneView from "../types/watch";
 import { Gianna } from "./internal/index";
+import { mapAsync } from "../types/utility";
 
 const PAGE_SIZE = 24;
 
@@ -58,19 +59,25 @@ async function createSceneSearchDoc(scene: Scene): Promise<ISceneSearchDoc> {
   };
 }
 
+const FIELDS = [
+  "name",
+  "labels",
+  "actors",
+  "studio_name",
+  "actor_names",
+  "label_names",
+];
+
 async function addSceneSearchDocs(docs: ISceneSearchDoc[]) {
   logger.log(`Indexing ${docs.length} items...`);
   const timeNow = +new Date();
-  const res = await index.index(docs, [
-    "name",
-    "labels",
-    "actors",
-    "studio_name",
-    "actor_names",
-    "label_names",
-  ]);
+  const res = await index.index(docs, FIELDS);
   logger.log(`Gianna indexing done in ${(Date.now() - timeNow) / 1000}s`);
   return res;
+}
+
+export async function updateScenes(scenes: Scene[]) {
+  return index.update(await mapAsync(scenes, createSceneSearchDoc), FIELDS);
 }
 
 export async function indexScenes(scenes: Scene[]) {
@@ -93,7 +100,7 @@ export async function indexScenes(scenes: Scene[]) {
   return numItems;
 }
 
-export async function searchScenes(query: string) {
+export async function searchScenes(query: string, shuffleSeed = "default") {
   const options = extractQueryOptions(query);
   logger.log(`Searching scenes for '${options.query}'...`);
 
@@ -220,21 +227,29 @@ export async function searchScenes(query: string) {
   }
 
   if (options.sortBy) {
-    const sortType = {
-      name: "string",
-      rating: "number",
-      bookmark: "number",
-      num_watches: "number",
-      release_date: "number",
-      duration: "number",
-      resolution: "number",
-      size: "number",
-    }[options.sortBy];
-    sort = {
-      sort_by: options.sortBy,
-      sort_asc: options.sortDir === "asc",
-      sort_type: sortType,
-    };
+    if (options.sortBy === "$shuffle") {
+      sort = {
+        sort_by: "$shuffle",
+        sort_asc: false,
+        sort_type: shuffleSeed,
+      };
+    } else {
+      const sortType = {
+        name: "string",
+        rating: "number",
+        bookmark: "number",
+        num_watches: "number",
+        release_date: "number",
+        duration: "number",
+        resolution: "number",
+        size: "number",
+      }[options.sortBy];
+      sort = {
+        sort_by: options.sortBy,
+        sort_asc: options.sortDir === "asc",
+        sort_type: sortType,
+      };
+    }
   }
 
   return index.search({

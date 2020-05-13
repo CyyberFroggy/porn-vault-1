@@ -16,6 +16,7 @@ import LabelledItem from "../../types/labelled_item";
 import ActorReference from "../../types/actor_reference";
 import MarkerReference from "../../types/marker_reference";
 import MovieScene from "../../types/movie_scene";
+import { updateScenes, index as sceneIndex } from "../../search/scene";
 
 type ISceneUpdateOpts = Partial<{
   favorite: boolean;
@@ -47,7 +48,7 @@ async function runScenePlugins(ids: string[]) {
       await Scene.setLabels(scene, labels);
       await Scene.setActors(scene, actors);
       await sceneCollection.upsert(scene._id, scene);
-      // await updateSceneDoc(scene); // TODO: update
+      await updateScenes([scene]);
 
       changedScenes.push(scene);
     }
@@ -239,7 +240,7 @@ export default {
 
         await sceneCollection.upsert(scene._id, scene);
         updatedScenes.push(scene);
-        // await updateSceneDoc(scene); // TODO: update
+        await updateScenes([scene]);
       }
     }
 
@@ -255,7 +256,7 @@ export default {
 
       if (scene) {
         await Scene.remove(scene);
-        // await removeSceneDoc(scene._id); // TODO: remove
+        await sceneIndex.remove([scene._id]);
         await Image.filterScene(scene._id);
 
         if (deleteImages === true) {

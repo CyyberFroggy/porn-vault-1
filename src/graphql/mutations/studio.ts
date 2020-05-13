@@ -10,6 +10,7 @@ import { createStudioSearchDoc } from "../../search/studio";
 // import { updateSceneDoc } from "../../search/scene";
 import LabelledItem from "../../types/labelled_item";
 import { studioCollection } from "../../database";
+import { updateScenes } from "../../search/scene";
 
 type IStudioUpdateOpts = Partial<{
   name: string;
@@ -32,7 +33,7 @@ export default {
       if (scene.studio === null && perms.includes(stripStr(studio.name))) {
         scene.studio = studio._id;
         await database.sceneCollection.upsert(scene._id, scene);
-        // await updateSceneDoc(scene); // TODO: update
+        await updateScenes([scene]);
         logger.log(`Updated scene ${scene._id}`);
       }
     }

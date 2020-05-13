@@ -26,7 +26,7 @@ export default gql`
 
   extend type Query {
     numScenes: Int!
-    getScenes(query: String, random: Int): SceneSearchResults!
+    getScenes(query: String, seed: String): SceneSearchResults!
     getSceneById(id: String!): Scene
     getScenesWithoutActors(num: Int): [Scene!]!
     getScenesWithoutLabels(num: Int): [Scene!]!

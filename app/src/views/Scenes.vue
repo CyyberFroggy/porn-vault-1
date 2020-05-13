@@ -105,7 +105,7 @@
 
     <div class="text-center" v-if="fetchError">
       <div>There was an error</div>
-      <v-btn @click="loadPage(page)">Try again</v-btn>
+      <v-btn class="mt-2" @click="loadPage(page)">Try again</v-btn>
     </div>
     <div v-else>
       <div class="mb-2 d-flex align-center">
@@ -116,6 +116,14 @@
         <v-btn :loading="fetchingRandom" @click="getRandom" icon>
           <v-icon>mdi-shuffle-variant</v-icon>
         </v-btn>
+        <v-tooltip right>
+          <template v-slot:activator="{ on }">
+            <v-btn v-on="on" :disabled="sortBy != '$shuffle'" @click="rerollSeed" icon>
+              <v-icon>mdi-dice-3-outline</v-icon>
+            </v-btn>
+          </template>
+          <span>Reroll shuffle seed</span>
+        </v-tooltip>
       </div>
       <v-row v-if="!fetchLoader && numResults">
         <v-col
@@ -279,6 +287,13 @@ export default class SceneList extends mixins(DrawerMixin) {
     return contextModule.showSidenav;
   }
 
+  rerollSeed() {
+    const seed = Math.random().toString(36);
+    localStorage.setItem("pm_seed", seed);
+    if (this.sortBy === "$shuffle") this.loadPage(this.page);
+    return seed;
+  }
+
   scenes = [] as IScene[];
   fetchLoader = false;
   fetchError = false;
@@ -395,6 +410,10 @@ export default class SceneList extends mixins(DrawerMixin) {
     {
       text: "Bookmarked",
       value: "bookmark"
+    },
+    {
+      text: "Random",
+      value: "$shuffle"
     }
   ];
 
@@ -409,18 +428,6 @@ export default class SceneList extends mixins(DrawerMixin) {
 
   selectedScenes = [] as string[];
   deleteSelectedScenesDialog = false;
-
-  /* resetLabels() {
-    this.selectedLabels.include = [];
-    this.selectedLabels.exclude = [];
-
-    this.page = 1;
-    this.scenes = [];
-     this.loadPage(this.page);
-
-    localStorage.removeItem("pm_sceneInclude");
-    localStorage.removeItem("pm_sceneExclude");
-  } */
 
   labelClasses(label: ILabel) {
     if (this.selectedLabels.include.includes(label._id))
@@ -687,17 +694,17 @@ export default class SceneList extends mixins(DrawerMixin) {
 
   getRandom() {
     this.fetchingRandom = true;
-    this.fetchPage(1)
-      .then(scenes => {
+    this.fetchPage(1, 1, true)
+      .then(result => {
         // @ts-ignore
-        this.$router.push(`/scene/${scenes[0]._id}`);
+        this.$router.push(`/scene/${result.items[0]._id}`);
       })
       .catch(err => {
         this.fetchingRandom = false;
       });
   }
 
-  async fetchPage(page: number, random = 0) {
+  async fetchPage(page: number, take = 24, random?: boolean) {
     try {
       let include = "";
       let exclude = "";
@@ -713,19 +720,18 @@ export default class SceneList extends mixins(DrawerMixin) {
         actors = "actors:" + this.selectedActorIds.join(",");
 
       const query = `query:'${this.query ||
-        ""}' ${actors} ${include} ${exclude} page:${page - 1} sortDir:${
-        this.sortDir
-      } sortBy:${this.sortBy} favorite:${
-        this.favoritesOnly ? "true" : "false"
-      } bookmark:${this.bookmarksOnly ? "true" : "false"} rating:${
-        this.ratingFilter
-      } duration.min:${this.durationRange[0] * 60} duration.max:${this
-        .durationRange[1] * 60}`;
+        ""}' take:${take} ${actors} ${include} ${exclude} page:${page -
+        1} sortDir:${this.sortDir} sortBy:${
+        random ? "$shuffle" : this.sortBy
+      }  favorite:${this.favoritesOnly ? "true" : "false"} bookmark:${
+        this.bookmarksOnly ? "true" : "false"
+      } rating:${this.ratingFilter} duration.min:${this.durationRange[0] *
+        60} duration.max:${this.durationRange[1] * 60}`;
 
       const result = await ApolloClient.query({
         query: gql`
-          query($query: String, $random: Int) {
-            getScenes(query: $query, random: $random) {
+          query($query: String, $seed: String) {
+            getScenes(query: $query, seed: $seed) {
               items {
                 ...SceneFragment
                 actors {
@@ -745,7 +751,7 @@ export default class SceneList extends mixins(DrawerMixin) {
         `,
         variables: {
           query,
-          random
+          seed: localStorage.getItem("pm_seed") || "default"
         }
       });
 

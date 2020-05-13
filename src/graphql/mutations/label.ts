@@ -8,6 +8,7 @@ import * as logger from "../../logger";
 import { updateImageDoc, isBlacklisted } from "../../search/image";
 import LabelledItem from "../../types/labelled_item";
 import { labelCollection } from "../../database";
+import { updateScenes } from "../../search/scene";
 
 type ILabelUpdateOpts = Partial<{
   name: string;
@@ -36,7 +37,7 @@ export default {
         const labels = (await Scene.getLabels(scene)).map((l) => l._id);
         labels.push(label._id);
         await Scene.setLabels(scene, labels);
-        // await updateSceneDoc(scene); // TODO: update
+        await updateScenes([scene]);
         logger.log(`Updated labels of ${scene._id}.`);
       }
     }

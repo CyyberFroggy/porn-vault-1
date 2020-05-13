@@ -12,6 +12,7 @@ export enum SortTarget {
   RESOLUTION = "resolution",
   AGE = "age",
   BOOKMARK = "bookmark",
+  $shuffle = "$shuffle",
 }
 
 interface IQueryOptions {
