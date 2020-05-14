@@ -57,16 +57,6 @@ export async function createActorSearchDoc(
   };
 }
 
-export async function clearActorIndex() {
-  try {
-    await Axios.delete("http://localhost:8000/index/actors");
-  } catch (error) {
-    logger.error("Error while resetting gianna actors");
-    logger.log(error.message);
-    throw error;
-  }
-}
-
 export async function updateActors(scenes: Actor[]) {
   return index.update(await mapAsync(scenes, createActorSearchDoc), FIELDS);
 }

@@ -37,16 +37,6 @@ export interface IImageSearchDoc {
   studioName: string | null;
 }
 
-export async function clearImageIndex() {
-  try {
-    await Axios.delete("http://localhost:8000/index/images");
-  } catch (error) {
-    logger.error("Error while resetting gianna images");
-    logger.log(error.message);
-    throw error;
-  }
-}
-
 export async function updateImages(images: Image[]) {
   return index.update(await mapAsync(images, createImageSearchDoc), FIELDS);
 }

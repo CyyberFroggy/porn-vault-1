@@ -51,6 +51,10 @@ export namespace Gianna {
       this.name = name;
     }
 
+    async clear() {
+      await Axios.delete(`http://localhost:8001/index/${this.name}/clear`);
+    }
+
     async update(items: T[], fields: string[]) {
       await Axios.patch(`http://localhost:8001/index/${this.name}`, {
         items,

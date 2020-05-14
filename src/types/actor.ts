@@ -70,7 +70,7 @@ export default class Actor {
   }
 
   static async getTopActors() {
-    const actors = await Actor.getAll();
+    /* const actors = await Actor.getAll();
 
     const scores = await mapAsync(actors, async (actor) => {
       const score =
@@ -86,7 +86,8 @@ export default class Actor {
     });
 
     scores.sort((a, b) => b.score - a.score);
-    return scores.map((s) => s.actor);
+    return scores.map((s) => s.actor); */
+    return []; // TODO: redo by sorting 'score'
   }
 
   constructor(name: string, aliases: string[] = []) {
