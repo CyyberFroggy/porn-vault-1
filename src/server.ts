@@ -34,10 +34,6 @@ import { spawnGianna, giannaVersion, resetGianna } from "./gianna";
 import https from "https";
 import { readFileSync } from "fs";
 
-logger.message(
-  "Check https://github.com/boi123212321/porn-vault for discussion & updates"
-);
-
 let serverReady = false;
 let setupMessage = "Setting up...";
 
@@ -72,6 +68,10 @@ async function scanFolders() {
 }
 
 export default async () => {
+  logger.message(
+    "Check https://github.com/boi123212321/porn-vault for discussion & updates"
+  );
+
   const app = express();
   app.use(express.json());
   app.use(cors);
