@@ -1,12 +1,7 @@
 import Movie from "../../types/movie";
 import { Dictionary } from "../../types/utility";
 import * as logger from "../../logger";
-import { indices } from "../../search/index";
-import {
-  createMovieSearchDoc,
-  index as movieIndex,
-  indexMovies,
-} from "../../search/movie";
+import { index as movieIndex, indexMovies } from "../../search/movie";
 import { onMovieCreate } from "../../plugin_events/movie";
 import { movieCollection } from "../../database";
 import MovieScene from "../../types/movie_scene";

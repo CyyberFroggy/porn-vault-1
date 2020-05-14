@@ -694,7 +694,7 @@ export default class SceneList extends mixins(DrawerMixin) {
 
   getRandom() {
     this.fetchingRandom = true;
-    this.fetchPage(1, 1, true)
+    this.fetchPage(1, 1, true, Math.random().toString())
       .then(result => {
         // @ts-ignore
         this.$router.push(`/scene/${result.items[0]._id}`);
@@ -704,7 +704,7 @@ export default class SceneList extends mixins(DrawerMixin) {
       });
   }
 
-  async fetchPage(page: number, take = 24, random?: boolean) {
+  async fetchPage(page: number, take = 24, random?: boolean, seed?: string) {
     try {
       let include = "";
       let exclude = "";
@@ -751,7 +751,7 @@ export default class SceneList extends mixins(DrawerMixin) {
         `,
         variables: {
           query,
-          seed: localStorage.getItem("pm_seed") || "default"
+          seed: seed || localStorage.getItem("pm_seed") || "default"
         }
       });
 

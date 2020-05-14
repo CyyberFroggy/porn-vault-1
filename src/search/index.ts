@@ -1,24 +1,8 @@
-import { studioIndex } from "./studio";
-
 import { buildImageIndex } from "./image";
 import { buildActorIndex } from "./actor";
 import { buildStudioIndex } from "./studio";
 import { buildMovieIndex } from "./movie";
 import { buildSceneIndex } from "./scene";
-
-export interface ISearchResults {
-  num_hits: number;
-  items: string[];
-  time: {
-    sec: number;
-    milli: number;
-    micro: number;
-  };
-}
-
-export const indices = {
-  studios: studioIndex,
-};
 
 export async function buildIndices() {
   await buildSceneIndex();

@@ -523,7 +523,7 @@ export default class MovieList extends mixins(DrawerMixin) {
 
   getRandom() {
     this.fetchingRandom = true;
-    this.fetchPage(1, 1, true)
+    this.fetchPage(1, 1, true, Math.random().toString())
       .then(result => {
         // @ts-ignore
         this.$router.push(`/movie/${result.items[0]._id}`);
@@ -533,7 +533,7 @@ export default class MovieList extends mixins(DrawerMixin) {
       });
   }
 
-  async fetchPage(page: number, take = 24, random?: boolean) {
+  async fetchPage(page: number, take = 24, random?: boolean, seed?: string) {
     try {
       let include = "";
       let exclude = "";
@@ -555,8 +555,8 @@ export default class MovieList extends mixins(DrawerMixin) {
 
       const result = await ApolloClient.query({
         query: gql`
-          query($query: String) {
-            getMovies(query: $query) {
+          query($query: String, $seed: String) {
+            getMovies(query: $query, seed: $seed) {
               items {
                 ...MovieFragment
                 actors {
@@ -574,7 +574,8 @@ export default class MovieList extends mixins(DrawerMixin) {
           ${actorFragment}
         `,
         variables: {
-          query
+          query,
+          seed: seed || localStorage.getItem("pm_seed") || "default"
         }
       });
 

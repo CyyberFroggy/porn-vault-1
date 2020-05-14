@@ -462,7 +462,7 @@ export default class ImageList extends mixins(DrawerMixin) {
     }, 500);
   }
 
-  async fetchPage(page: number, take = 24, random?: boolean) {
+  async fetchPage(page: number, take = 24, random?: boolean, seed?: string) {
     try {
       let include = "";
       let exclude = "";
@@ -516,7 +516,7 @@ export default class ImageList extends mixins(DrawerMixin) {
         `,
         variables: {
           query,
-          seed: localStorage.getItem("pm_seed") || "default"
+          seed: seed || localStorage.getItem("pm_seed") || "default"
         }
       });
 

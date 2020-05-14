@@ -97,12 +97,6 @@ export const message = (...args: any) => {
   debug("vault:message")(text);
   appendToLog(createItem(LogType.MESSAGE, text));
 };
-// TODO: deprecated soon
-export const search = (...args: any) => {
-  const text = merge(...args);
-  debug("vault:search")(text);
-  appendToLog(createItem(LogType.SEARCH, text));
-};
 export const izzy = (...args: any) => {
   const text = merge(...args);
   debug("vault:izzy")(text);

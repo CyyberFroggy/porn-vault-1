@@ -17,7 +17,6 @@ import Studio from "../types/studio";
 import Label from "../types/label";
 import Actor from "../types/actor";
 import { onActorCreate } from "./actor";
-import { indices } from "../search/index";
 import { indexActors } from "../search/actor";
 import { indexImages } from "../search/image";
 import {
@@ -31,7 +30,7 @@ import {
 import Movie from "../types/movie";
 import { onMovieCreate } from "./movie";
 import { indexMovies } from "../search/movie";
-import { createStudioSearchDoc } from "../search/studio";
+import { indexStudios } from "../search/studio";
 import SceneView from "../types/watch";
 
 // This function has side effects
@@ -180,7 +179,7 @@ export async function onSceneCreate(
       const studio = new Studio(pluginResult.studio);
       scene.studio = studio._id;
       await studioCollection.upsert(studio._id, studio);
-      indices.studios.add(await createStudioSearchDoc(studio));
+      await indexStudios([studio]);
       logger.log("Created studio " + studio.name);
     }
   }

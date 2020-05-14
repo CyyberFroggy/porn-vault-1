@@ -215,7 +215,7 @@ export async function searchScenes(query: string, shuffleSeed = "default") {
   if (options.studios.length) {
     filter.children.push({
       type: "OR",
-      children: options.exclude.map((studioId) => ({
+      children: options.studios.map((studioId) => ({
         condition: {
           operation: "=",
           property: "studio",

@@ -585,13 +585,15 @@ export default class MovieDetails extends Vue {
         query: gql`
           query($query: String) {
             getImages(query: $query) {
-              ...ImageFragment
-              actors {
-                ...ActorFragment
-              }
-              scene {
-                _id
-                name
+              items {
+                ...ImageFragment
+                actors {
+                  ...ActorFragment
+                }
+                scene {
+                  _id
+                  name
+                }
               }
             }
           }
@@ -603,7 +605,7 @@ export default class MovieDetails extends Vue {
         }
       });
 
-      return result.data.getImages;
+      return result.data.getImages.items;
     } catch (err) {
       throw err;
     }

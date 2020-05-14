@@ -242,7 +242,7 @@ export async function searchImages(query: string, shuffleSeed = "default") {
   if (options.scenes.length) {
     filter.children.push({
       type: "OR",
-      children: options.exclude.map((sceneId) => ({
+      children: options.scenes.map((sceneId) => ({
         condition: {
           operation: "=",
           property: "scene",
@@ -256,7 +256,7 @@ export async function searchImages(query: string, shuffleSeed = "default") {
   if (options.studios.length) {
     filter.children.push({
       type: "OR",
-      children: options.exclude.map((studioId) => ({
+      children: options.studios.map((studioId) => ({
         condition: {
           operation: "=",
           property: "studio",

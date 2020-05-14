@@ -5,9 +5,7 @@ import Movie from "../../types/movie";
 import Image from "../../types/image";
 import { stripStr } from "../../extractor";
 import * as logger from "../../logger";
-import { indices } from "../../search/index";
-import { createStudioSearchDoc } from "../../search/studio";
-// import { updateSceneDoc } from "../../search/scene";
+import { indexStudios, index as studioIndex } from "../../search/studio";
 import LabelledItem from "../../types/labelled_item";
 import { studioCollection } from "../../database";
 import { updateScenes } from "../../search/scene";
@@ -39,7 +37,7 @@ export default {
     }
 
     await studioCollection.upsert(studio._id, studio);
-    indices.studios.add(await createStudioSearchDoc(studio));
+    await indexStudios([studio]);
     return studio;
   },
 
@@ -76,8 +74,9 @@ export default {
 
         await studioCollection.upsert(studio._id, studio);
         updatedStudios.push(studio);
-        indices.studios.update(studio._id, await createStudioSearchDoc(studio));
       }
+
+      await indexStudios(updatedStudios);
     }
 
     return updatedStudios;
@@ -89,7 +88,7 @@ export default {
 
       if (studio) {
         await studioCollection.remove(studio._id);
-        indices.studios.remove(studio._id);
+        await studioIndex.remove([studio._id]);
         await Studio.filterStudio(studio._id);
         await Scene.filterStudio(studio._id);
         await Movie.filterStudio(studio._id);
