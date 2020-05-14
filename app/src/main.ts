@@ -14,6 +14,7 @@ import LabelFilter from "./components/LabelFilter.vue";
 import Divider from "./components/Divider.vue";
 import NoResults from "./components/NoResults.vue";
 import Loading from "./components/Loading.vue";
+import Flag from "./components/Flag.vue";
 
 Vue.use(VueTheMask);
 
@@ -24,6 +25,7 @@ Vue.component("LabelFilter", LabelFilter);
 Vue.component("Divider", Divider);
 Vue.component("NoResults", NoResults);
 Vue.component("Loading", Loading);
+Vue.component("Flag", Flag);
 
 Vue.config.productionTip = false;
 
