@@ -92,24 +92,38 @@
       </v-container>
     </v-navigation-drawer>
 
-    <div class="d-flex align-center">
-      <h1 class="font-weight-light mr-3">Images</h1>
-      <v-btn @click="openUploadDialog" icon>
-        <v-icon>mdi-upload</v-icon>
-      </v-btn>
+    <div class="text-center" v-if="fetchError">
+      <div>There was an error</div>
+      <v-btn class="mt-2" @click="loadPage(page)">Try again</v-btn>
     </div>
-
-    <v-container fluid>
-      <v-row v-if="!waiting">
+    <div v-else>
+      <div class="mb-2 d-flex align-center">
+        <div class="mr-3">
+          <span class="display-1 font-weight-bold mr-2">{{ fetchLoader ? "-" : numResults }}</span>
+          <span class="title font-weight-regular">images found</span>
+        </div>
+        <v-btn @click="openUploadDialog" icon>
+          <v-icon>mdi-upload</v-icon>
+        </v-btn>
+        <v-tooltip right>
+          <template v-slot:activator="{ on }">
+            <v-btn v-on="on" :disabled="sortBy != '$shuffle'" @click="rerollSeed" icon>
+              <v-icon>mdi-dice-3-outline</v-icon>
+            </v-btn>
+          </template>
+          <span>Reroll shuffle seed</span>
+        </v-tooltip>
+      </div>
+      <v-row v-if="!fetchLoader && numResults">
         <v-col
           class="pa-0"
           v-for="(image, index) in images"
           :key="image._id"
           :cols="largeThumbs ? 12 : 6"
           :sm="largeThumbs ? 12 : 4"
-          :md="largeThumbs ? 12 : 3"
+          :md="largeThumbs ? 6 : 3"
           :lg="largeThumbs ? 6 : 3"
-          :xl="largeThumbs ? 6 : 2"
+          :xl="largeThumbs ? 4 : 2"
         >
           <ImageCard
             :class="selectedImages.length && !selectedImages.includes(image._id) ? 'not-selected': ''"
@@ -133,25 +147,18 @@
           </ImageCard>
         </v-col>
       </v-row>
-      <div class="text-center" v-else>Keep on writing...</div>
-    </v-container>
-
-    <infinite-loading :identifier="infiniteId" @infinite="infiniteHandler">
-      <div slot="no-results">
-        <v-icon large>mdi-close</v-icon>
-        <div>Nothing found!</div>
-      </div>
-
-      <div slot="spinner">
-        <v-progress-circular indeterminate></v-progress-circular>
-        <div>Loading...</div>
-      </div>
-
-      <div slot="no-more">
-        <v-icon large>mdi-emoticon-wink</v-icon>
-        <div>That's all!</div>
-      </div>
-    </infinite-loading>
+      <NoResults v-else-if="!fetchLoader && !numResults" />
+      <Loading v-else />
+    </div>
+    <div class="mt-3" v-if="numResults && numPages > 1">
+      <v-pagination
+        @input="loadPage"
+        v-model="page"
+        :total-visible="7"
+        :disabled="fetchLoader"
+        :length="numPages"
+      ></v-pagination>
+    </div>
 
     <v-dialog :persistent="isUploading" scrollable v-model="uploadDialog" max-width="400px">
       <ImageUploader @update-state="isUploading = $event" @uploaded="images.unshift($event)" />
@@ -206,12 +213,23 @@ import { mixins } from "vue-class-component";
     ImageUploader
   }
 })
-export default class ImagesView extends mixins(DrawerMixin) {
+export default class ImageList extends mixins(DrawerMixin) {
   get showSidenav() {
     return contextModule.showSidenav;
   }
 
+  rerollSeed() {
+    const seed = Math.random().toString(36);
+    localStorage.setItem("pm_seed", seed);
+    if (this.sortBy === "$shuffle") this.loadPage(this.page);
+    return seed;
+  }
+
   images = [] as IImage[];
+  fetchLoader = false;
+  fetchError = false;
+  fetchingRandom = false;
+
   lightboxIndex = null as number | null;
 
   tryReadLabelsFromLocalStorage(key: string) {
@@ -231,15 +249,18 @@ export default class ImagesView extends mixins(DrawerMixin) {
     localStorage.setItem("pm_imageInclude", val.include.join(","));
     localStorage.setItem("pm_imageExclude", val.exclude.join(","));
 
-    this.page = 0;
+    this.page = 1;
     this.images = [];
-    this.infiniteId++;
+    this.numResults = 0;
+    this.numPages = 0;
   }
 
   largeThumbs = localStorage.getItem("pm_imageLargeThumbs") == "true" || false;
 
   query = localStorage.getItem("pm_imageQuery") || "";
-  page = 0;
+  page = 1;
+  numResults = 0;
+  numPages = 0;
 
   sortDir = localStorage.getItem("pm_imageSortDir") || "desc";
   sortDirItems = [
@@ -261,7 +282,7 @@ export default class ImagesView extends mixins(DrawerMixin) {
     },
     {
       text: "A-Z",
-      value: "alpha"
+      value: "name"
     },
     {
       text: "Added to collection",
@@ -274,6 +295,10 @@ export default class ImagesView extends mixins(DrawerMixin) {
     {
       text: "Bookmarked",
       value: "bookmark"
+    },
+    {
+      text: "Random",
+      value: "$shuffle"
     }
   ];
 
@@ -281,7 +306,6 @@ export default class ImagesView extends mixins(DrawerMixin) {
   bookmarksOnly = localStorage.getItem("pm_imageBookmark") == "true";
   ratingFilter = parseInt(localStorage.getItem("pm_imageRating") || "0");
 
-  infiniteId = 0;
   resetTimeout = null as NodeJS.Timeout | null;
 
   uploadDialog = false;
@@ -362,48 +386,60 @@ export default class ImagesView extends mixins(DrawerMixin) {
   @Watch("ratingFilter", {})
   onRatingChange(newVal: number) {
     localStorage.setItem("pm_imageRating", newVal.toString());
-    this.page = 0;
+    this.page = 1;
     this.images = [];
-    this.infiniteId++;
+    this.numResults = 0;
+    this.numPages = 0;
+    this.loadPage(this.page);
   }
 
   @Watch("favoritesOnly")
   onFavoriteChange(newVal: boolean) {
     localStorage.setItem("pm_imageFavorite", "" + newVal);
-    this.page = 0;
+    this.page = 1;
     this.images = [];
-    this.infiniteId++;
+    this.numResults = 0;
+    this.numPages = 0;
+    this.loadPage(this.page);
   }
 
   @Watch("bookmarksOnly")
   onBookmarkChange(newVal: boolean) {
     localStorage.setItem("pm_imageBookmark", "" + newVal);
-    this.page = 0;
+    this.page = 1;
     this.images = [];
-    this.infiniteId++;
+    this.numResults = 0;
+    this.numPages = 0;
+    this.loadPage(this.page);
   }
 
   @Watch("sortDir")
   onSortDirChange(newVal: string) {
     localStorage.setItem("pm_imageSortDir", newVal);
-    this.page = 0;
+    this.page = 1;
     this.images = [];
-    this.infiniteId++;
+    this.numResults = 0;
+    this.numPages = 0;
+    this.loadPage(this.page);
   }
 
   @Watch("sortBy")
   onSortChange(newVal: string) {
     localStorage.setItem("pm_imageSortBy", newVal);
-    this.page = 0;
+    this.page = 1;
     this.images = [];
-    this.infiniteId++;
+    this.numResults = 0;
+    this.numPages = 0;
+    this.loadPage(this.page);
   }
 
   @Watch("selectedLabels")
   onLabelChange() {
-    this.page = 0;
+    this.page = 1;
     this.images = [];
-    this.infiniteId++;
+    this.numResults = 0;
+    this.numPages = 0;
+    this.loadPage(this.page);
   }
 
   @Watch("query")
@@ -415,32 +451,18 @@ export default class ImagesView extends mixins(DrawerMixin) {
     localStorage.setItem("pm_imageQuery", newVal || "");
 
     this.waiting = true;
-    this.page = 0;
+    this.page = 1;
     this.images = [];
+    this.numResults = 0;
+    this.numPages = 0;
 
     this.resetTimeout = setTimeout(() => {
       this.waiting = false;
-      this.infiniteId++;
+      this.loadPage(this.page);
     }, 500);
   }
 
-  infiniteHandler($state) {
-    this.fetchPage()
-      .then(items => {
-        if (items.length) {
-          this.page++;
-          this.images.push(...items);
-          $state.loaded();
-        } else {
-          $state.complete();
-        }
-      })
-      .catch(err => {
-        $state.error();
-      });
-  }
-
-  async fetchPage() {
+  async fetchPage(page: number, take = 24, random?: boolean, seed?: string) {
     try {
       let include = "";
       let exclude = "";
@@ -451,9 +473,10 @@ export default class ImagesView extends mixins(DrawerMixin) {
       if (this.selectedLabels.exclude.length)
         exclude = "exclude:" + this.selectedLabels.exclude.join(",");
 
-      const query = `query:'${this.query || ""}' ${include} ${exclude} page:${
-        this.page
-      } sortDir:${this.sortDir} sortBy:${this.sortBy} favorite:${
+      const query = `query:'${this.query ||
+        ""}' ${include} ${exclude} page:${this.page - 1} sortDir:${
+        this.sortDir
+      } take:${take} sortBy:${random ? "$shuffle" : this.sortBy} favorite:${
         this.favoritesOnly ? "true" : "false"
       } bookmark:${this.bookmarksOnly ? "true" : "false"} rating:${
         this.ratingFilter
@@ -461,26 +484,30 @@ export default class ImagesView extends mixins(DrawerMixin) {
 
       const result = await ApolloClient.query({
         query: gql`
-          query($query: String) {
-            getImages(query: $query) {
-              ...ImageFragment
-              labels {
-                _id
-                name
-              }
-              studio {
-                _id
-                name
-              }
-              actors {
-                ...ActorFragment
-                avatar {
+          query($query: String, $seed: String) {
+            getImages(query: $query, seed: $seed) {
+              numItems
+              numPages
+              items {
+                ...ImageFragment
+                labels {
                   _id
+                  name
                 }
-              }
-              scene {
-                _id
-                name
+                studio {
+                  _id
+                  name
+                }
+                actors {
+                  ...ActorFragment
+                  avatar {
+                    _id
+                  }
+                }
+                scene {
+                  _id
+                  name
+                }
               }
             }
           }
@@ -488,7 +515,8 @@ export default class ImagesView extends mixins(DrawerMixin) {
           ${actorFragment}
         `,
         variables: {
-          query
+          query,
+          seed: seed || localStorage.getItem("pm_seed") || "default"
         }
       });
 
@@ -509,6 +537,30 @@ export default class ImagesView extends mixins(DrawerMixin) {
       .slice()
       .sort()
       .join(", ");
+  }
+
+  loadPage(page: number) {
+    this.fetchLoader = true;
+    this.selectedImages = [];
+
+    this.fetchPage(page)
+      .then(result => {
+        this.fetchError = false;
+        this.images = result.items;
+        this.numResults = result.numItems;
+        this.numPages = result.numPages;
+      })
+      .catch(err => {
+        console.error(err);
+        this.fetchError = true;
+      })
+      .finally(() => {
+        this.fetchLoader = false;
+      });
+  }
+
+  mounted() {
+    this.loadPage(1);
   }
 
   beforeMount() {

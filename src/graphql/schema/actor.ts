@@ -40,9 +40,15 @@ export default gql`
     links: Object!
   }
 
+  type ActorSearchResults {
+    numItems: Int!
+    numPages: Int!
+    items: [Actor!]!
+  }
+
   extend type Query {
     numActors: Int!
-    getActors(query: String): [Actor!]!
+    getActors(query: String, seed: String): ActorSearchResults!
     getActorById(id: String!): Actor
     topActors(num: Int): [Actor!]!
     getActorsWithoutScenes(num: Int): [Actor!]!

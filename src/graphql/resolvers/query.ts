@@ -5,14 +5,12 @@ import Movie from "../../types/movie";
 import { mapAsync, filterAsync } from "../../types/utility";
 import Studio from "../../types/studio";
 import Image from "../../types/image";
-import * as database from "../../database/index";
 import CustomField from "../../types/custom_field";
 import { getImages } from "./search/image";
 import { getScenes } from "./search/scene";
 import { getActors } from "./search/actor";
 import { getStudios } from "./search/studio";
 import { getMovies } from "./search/movie";
-import { twigsVersion } from "../../search/index";
 import { getLength, isProcessing } from "../../queue/processing";
 import {
   sceneCollection,
@@ -33,12 +31,6 @@ export default {
     return (await SceneView.getAll()).filter(
       (w) => w.date >= (min || 0) && w.date <= (max || 99999999999999)
     );
-  },
-
-  async twigs() {
-    return {
-      version: await twigsVersion(),
-    };
   },
 
   async getScenesWithoutStudios(_, { num }: { num: number }) {
@@ -110,9 +102,7 @@ export default {
   },
 
   getStudios,
-
   getMovies,
-
   getActors,
   getScenes,
   getImages,
