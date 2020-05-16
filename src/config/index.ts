@@ -1,16 +1,12 @@
+import chokidar from "chokidar";
+import inquirer from "inquirer";
+import YAML from "yaml";
+
+import { onConfigLoad } from "..";
+import { existsAsync, readFileAsync, writeFileAsync } from "../fs/async";
 import * as logger from "../logger";
 import setupFunction from "../setup";
-import { exists, writeFile, readFile } from "fs";
-import { promisify } from "util";
 import { Dictionary } from "../types/utility";
-import YAML from "yaml";
-import inquirer from "inquirer";
-import chokidar from "chokidar";
-import { onConfigLoad } from "../index";
-
-const existsAsync = promisify(exists);
-const readFileAsync = promisify(readFile);
-const writeFileAsync = promisify(writeFile);
 
 function stringifyFormatted(obj: any) {
   return JSON.stringify(obj, null, 1);
