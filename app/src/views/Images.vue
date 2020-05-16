@@ -78,7 +78,7 @@
           solo
           flat
           single-line
-          :disabled="sortBy == 'relevance'"
+          :disabled="sortBy == 'relevance' || sortBy == '$shuffle'"
           hide-details
           color="primary"
           item-text="text"
