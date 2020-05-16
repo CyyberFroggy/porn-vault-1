@@ -134,6 +134,12 @@ export const defaultConfig: IConfig = {
 let loadedConfig;
 export let configFile;
 
+const configFilename =
+  process.env.NODE_ENV === "test" ? "config.test" : "config";
+
+const configJSONFilename = `${configFilename}.json`;
+const configYAMLFilename = `${configFilename}.yaml`;
+
 export async function checkConfig() {
   const hasReadFile = await loadConfig();
 
@@ -168,41 +174,44 @@ export async function checkConfig() {
   loadedConfig = await setupFunction();
 
   if (yaml) {
-    await writeFileAsync("config.yaml", YAML.stringify(loadedConfig), "utf-8");
-    logger.warn("Created config.yaml. Please edit and restart.");
+    await writeFileAsync(
+      configYAMLFilename,
+      YAML.stringify(loadedConfig),
+      "utf-8"
+    );
+    logger.warn(`Created ${configYAMLFilename}. Please edit and restart.`);
   } else {
     await writeFileAsync(
-      "config.json",
+      configJSONFilename,
       stringifyFormatted(loadedConfig),
       "utf-8"
     );
-    logger.warn("Created config.json. Please edit and restart.");
+    logger.warn(`Created ${configJSONFilename}. Please edit and restart.`);
   }
 
   return process.exit(0);
 }
 
 export async function loadConfig() {
-  if (await existsAsync("config.json")) {
-    logger.message("Loading config.json...");
-    try {
-      loadedConfig = JSON.parse(await readFileAsync("config.json", "utf-8"));
-    } catch (error) {
-      logger.error(error.message);
-      process.exit(1);
+  try {
+    if (await existsAsync(configJSONFilename)) {
+      logger.message(`Loading ${configJSONFilename}...`);
+      loadedConfig = JSON.parse(
+        await readFileAsync(configJSONFilename, "utf-8")
+      );
+      configFile = configJSONFilename;
+      return true;
+    } else if (await existsAsync(configYAMLFilename)) {
+      logger.message(`Loading ${configYAMLFilename}...`);
+      loadedConfig = YAML.parse(
+        await readFileAsync(configYAMLFilename, "utf-8")
+      );
+      configFile = configYAMLFilename;
+      return true;
     }
-    configFile = "config.json";
-    return true;
-  } else if (await existsAsync("config.yaml")) {
-    logger.message("Loading config.yaml...");
-    try {
-      loadedConfig = YAML.parse(await readFileAsync("config.yaml", "utf-8"));
-    } catch (error) {
-      logger.error(error.message);
-      process.exit(1);
-    }
-    configFile = "config.yaml";
-    return true;
+  } catch (error) {
+    logger.error(error.message);
+    process.exit(1);
   }
 
   return false;
@@ -218,20 +227,19 @@ export function watchConfig() {
 
     let newConfig = null as IConfig | null;
 
-    if (configFile.endsWith(".json")) {
-      try {
-        newConfig = JSON.parse(await readFileAsync("config.json", "utf-8"));
-      } catch (error) {
-        logger.error(error.message);
-        logger.error("ERROR when loading new config, please fix it.");
+    try {
+      if (configFile.endsWith(".json")) {
+        newConfig = JSON.parse(
+          await readFileAsync(configJSONFilename, "utf-8")
+        );
+      } else if (configFile.endsWith(".yaml")) {
+        newConfig = YAML.parse(
+          await readFileAsync(configYAMLFilename, "utf-8")
+        );
       }
-    } else if (configFile.endsWith(".yaml")) {
-      try {
-        newConfig = YAML.parse(await readFileAsync("config.yaml", "utf-8"));
-      } catch (error) {
-        logger.error(error.message);
-        logger.error("ERROR when loading new config, please fix it.");
-      }
+    } catch (error) {
+      logger.error(error.message);
+      logger.error("ERROR when loading new config, please fix it.");
     }
 
     if (newConfig) {
