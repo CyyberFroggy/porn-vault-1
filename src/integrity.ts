@@ -8,7 +8,7 @@ export function transformFile(
   cb: (str: string) => string | false
 ) {
   return new Promise((resolve, reject) => {
-    if (!fs.existsSync(file)) return;
+    if (!fs.existsSync(file)) return resolve();
 
     let lines = [] as string[];
     let modified = false;
