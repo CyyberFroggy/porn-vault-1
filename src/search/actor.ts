@@ -3,10 +3,10 @@ import Scene from "../types/scene";
 import * as logger from "../logger";
 import ora from "ora";
 import { Gianna } from "./internal/index";
-import Axios from "axios";
 import argv from "../args";
 import { mapAsync } from "../types/utility";
 import extractQueryOptions from "../query_extractor";
+import { getNationality } from "../types/countries";
 
 const PAGE_SIZE = 24;
 
@@ -29,6 +29,7 @@ export interface IActorSearchDoc {
   bornOn: number | null;
   age: number | null;
   numScenes: number;
+  nationality: string | null;
 }
 
 export async function createActorSearchDoc(
@@ -54,6 +55,9 @@ export async function createActorSearchDoc(
     bornOn: actor.bornOn,
     numScenes,
     age: Actor.getAge(actor),
+    nationality: actor.nationality
+      ? getNationality(actor.nationality).nationality
+      : null,
   };
 }
 
