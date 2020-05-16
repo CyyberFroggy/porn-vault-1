@@ -41,7 +41,7 @@ Bitcoin: 1Bw82zC5FnVtw93ZrcALQTeZBXgtVWH75n
 
 ## Config
 
-See https://raw.githubusercontent.com/boi123212321/porn-vault/master/doc/config.md
+See https://github.com/boi123212321/porn-vault/blob/dev/doc/config.md
 
 ## How to run
 
