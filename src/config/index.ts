@@ -1,5 +1,6 @@
 import chokidar from "chokidar";
 import inquirer from "inquirer";
+import path from "path";
 import YAML from "yaml";
 
 import { onConfigLoad } from "..";
@@ -137,8 +138,14 @@ export let configFile;
 const configFilename =
   process.env.NODE_ENV === "test" ? "config.test" : "config";
 
-const configJSONFilename = `${configFilename}.json`;
-const configYAMLFilename = `${configFilename}.yaml`;
+const configJSONFilename = path.resolve(
+  process.cwd(),
+  `${configFilename}.json`
+);
+const configYAMLFilename = path.resolve(
+  process.cwd(),
+  `${configFilename}.yaml`
+);
 
 export async function checkConfig() {
   const hasReadFile = await loadConfig();
@@ -162,14 +169,19 @@ export async function checkConfig() {
     return;
   }
 
-  const { yaml } = await inquirer.prompt([
-    {
-      type: "confirm",
-      name: "yaml",
-      message: "Use YAML (instead of JSON) for config file?",
-      default: false,
-    },
-  ]);
+  const yaml =
+    process.env.NODE_ENV === "test"
+      ? false
+      : (
+          await inquirer.prompt([
+            {
+              type: "confirm",
+              name: "yaml",
+              message: "Use YAML (instead of JSON) for config file?",
+              default: false,
+            },
+          ])
+        ).yaml;
 
   loadedConfig = await setupFunction();
 
@@ -208,6 +220,8 @@ export async function loadConfig() {
       );
       configFile = configYAMLFilename;
       return true;
+    } else {
+      logger.warn("Did not find any config file");
     }
   } catch (error) {
     logger.error(error.message);
