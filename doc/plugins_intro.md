@@ -163,4 +163,4 @@ PLUGINS:
 
 ## Advanced stuff
 
-https://github.com/boi123212321/porn-vault/blob/dev/doc/pipe_plugins.md
+[Pipe plugin results](https://github.com/boi123212321/porn-vault/blob/dev/doc/pipe_plugins.md)
