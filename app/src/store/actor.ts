@@ -4,6 +4,46 @@ import { VuexModule, Module, Mutation, Action } from "vuex-class-modules";
 class ActorModule extends VuexModule {
   current = null as IActor | null;
 
+  page = 1;
+  numResults = 0;
+  numPages = 0;
+  items = [] as IActor[];
+
+  @Mutation
+  resetPagination() {
+    this.items = [];
+    this.numPages = 0;
+    this.numResults = 0;
+    this.page = 1;
+  }
+
+  @Mutation
+  setPage(num: number) {
+    this.page = num;
+  }
+
+  /* @Mutation
+  removeScenes(ids: string[]) {
+    for (const id of ids) {
+      this.items = this.items.filter((scene) => scene._id != id);
+    }
+  } */
+
+  @Mutation
+  setPagination({
+    items,
+    numResults,
+    numPages,
+  }: {
+    items: IActor[];
+    numResults: number;
+    numPages: number;
+  }) {
+    this.items = items;
+    this.numResults = numResults;
+    this.numPages = numPages;
+  }
+
   @Mutation
   setNationality(nation: any) {
     if (this.current) this.current.nationality = nation;

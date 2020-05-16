@@ -6,6 +6,7 @@ import vuetify from "./plugins/vuetify";
 import "roboto-fontface/css/roboto/roboto-fontface.css";
 import "@mdi/font/css/materialdesignicons.css";
 import VueTheMask from "vue-the-mask";
+import vueScrollBehavior from "vue-scroll-behavior";
 
 import BindTitle from "./components/BindTitle.vue";
 import DateInput from "./components/DateInput.vue";
@@ -16,6 +17,7 @@ import NoResults from "./components/NoResults.vue";
 import Loading from "./components/Loading.vue";
 import Flag from "./components/Flag.vue";
 
+Vue.use(vueScrollBehavior, { router: router });
 Vue.use(VueTheMask);
 
 Vue.component("BindTitle", BindTitle);

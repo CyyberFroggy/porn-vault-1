@@ -272,6 +272,7 @@ import ILabel from "../types/label";
 import moment from "moment";
 import DrawerMixin from "../mixins/drawer";
 import { mixins } from "vue-class-component";
+import { sceneModule } from "../store/scene";
 
 @Component({
   components: {
@@ -287,6 +288,10 @@ export default class SceneList extends mixins(DrawerMixin) {
     return contextModule.showSidenav;
   }
 
+  get scenes() {
+    return sceneModule.items;
+  }
+
   rerollSeed() {
     const seed = Math.random().toString(36);
     localStorage.setItem("pm_seed", seed);
@@ -294,7 +299,6 @@ export default class SceneList extends mixins(DrawerMixin) {
     return seed;
   }
 
-  scenes = [] as IScene[];
   fetchLoader = false;
   fetchError = false;
   fetchingRandom = false;
@@ -327,10 +331,7 @@ export default class SceneList extends mixins(DrawerMixin) {
     localStorage.setItem("pm_sceneInclude", val.include.join(","));
     localStorage.setItem("pm_sceneExclude", val.exclude.join(","));
 
-    this.page = 1;
-    this.scenes = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    sceneModule.resetPagination();
   }
 
   validCreation = false;
@@ -344,9 +345,22 @@ export default class SceneList extends mixins(DrawerMixin) {
   sceneNameRules = [v => (!!v && !!v.length) || "Invalid scene name"];
 
   query = localStorage.getItem("pm_sceneQuery") || "";
-  page = 1;
-  numResults = 0;
-  numPages = 0;
+
+  set page(page: number) {
+    sceneModule.setPage(page);
+  }
+
+  get page() {
+    return sceneModule.page;
+  }
+
+  get numResults() {
+    return sceneModule.numResults;
+  }
+
+  get numPages() {
+    return sceneModule.numPages;
+  }
 
   durationMax =
     parseInt(localStorage.getItem("pm_durationFilterMax") || "180") || 180;
@@ -459,9 +473,7 @@ export default class SceneList extends mixins(DrawerMixin) {
       }
     })
       .then(res => {
-        for (const id of this.selectedScenes) {
-          this.scenes = this.scenes.filter(scene => scene._id != id);
-        }
+        sceneModule.removeScenes(this.selectedScenes);
         this.selectedScenes = [];
         this.deleteSelectedScenesDialog = false;
       })
@@ -569,59 +581,41 @@ export default class SceneList extends mixins(DrawerMixin) {
   @Watch("ratingFilter", {})
   onRatingChange(newVal: number) {
     localStorage.setItem("pm_sceneRating", newVal.toString());
-    this.page = 1;
-    this.scenes = [];
+    sceneModule.resetPagination();
     this.loadPage(this.page);
-    this.numResults = 0;
-    this.numPages = 0;
   }
 
   @Watch("favoritesOnly")
   onFavoriteChange(newVal: boolean) {
     localStorage.setItem("pm_sceneFavorite", "" + newVal);
-    this.page = 1;
-    this.scenes = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    sceneModule.resetPagination();
     this.loadPage(this.page);
   }
 
   @Watch("bookmarksOnly")
   onBookmarkChange(newVal: boolean) {
     localStorage.setItem("pm_sceneBookmark", "" + newVal);
-    this.page = 1;
-    this.scenes = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    sceneModule.resetPagination();
     this.loadPage(this.page);
   }
 
   @Watch("sortDir")
   onSortDirChange(newVal: string) {
     localStorage.setItem("pm_sceneSortDir", newVal);
-    this.page = 1;
-    this.scenes = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    sceneModule.resetPagination();
     this.loadPage(this.page);
   }
 
   @Watch("sortBy")
   onSortChange(newVal: string) {
     localStorage.setItem("pm_sceneSortBy", newVal);
-    this.page = 1;
-    this.scenes = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    sceneModule.resetPagination();
     this.loadPage(this.page);
   }
 
   @Watch("selectedLabels")
   onLabelChange() {
-    this.page = 1;
-    this.scenes = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    sceneModule.resetPagination();
     this.loadPage(this.page);
   }
 
@@ -634,10 +628,7 @@ export default class SceneList extends mixins(DrawerMixin) {
     localStorage.setItem("pm_sceneActors", JSON.stringify(this.selectedActors));
 
     this.waiting = true;
-    this.page = 1;
-    this.scenes = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    sceneModule.resetPagination();
 
     this.resetTimeout = setTimeout(() => {
       this.waiting = false;
@@ -661,10 +652,7 @@ export default class SceneList extends mixins(DrawerMixin) {
     );
 
     this.waiting = true;
-    this.page = 1;
-    this.scenes = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    sceneModule.resetPagination();
 
     this.resetTimeout = setTimeout(() => {
       this.waiting = false;
@@ -681,10 +669,7 @@ export default class SceneList extends mixins(DrawerMixin) {
     localStorage.setItem("pm_sceneQuery", newVal || "");
 
     this.waiting = true;
-    this.page = 1;
-    this.scenes = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    sceneModule.resetPagination();
 
     this.resetTimeout = setTimeout(() => {
       this.waiting = false;
@@ -768,9 +753,11 @@ export default class SceneList extends mixins(DrawerMixin) {
     this.fetchPage(page)
       .then(result => {
         this.fetchError = false;
-        this.scenes = result.items;
-        this.numResults = result.numItems;
-        this.numPages = result.numPages;
+        sceneModule.setPagination({
+          items: result.items,
+          numResults: result.numItems,
+          numPages: result.numPages
+        });
       })
       .catch(err => {
         console.error(err);
@@ -782,7 +769,7 @@ export default class SceneList extends mixins(DrawerMixin) {
   }
 
   mounted() {
-    this.loadPage(1);
+    if (!this.scenes.length) this.loadPage(1);
   }
 
   beforeMount() {

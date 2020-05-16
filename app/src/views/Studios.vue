@@ -169,6 +169,7 @@ import studioFragment from "../fragments/studio";
 import StudioCard from "../components/StudioCard.vue";
 import { mixins } from "vue-class-component";
 import DrawerMixin from "../mixins/drawer";
+import { studioModule } from "../store/studio";
 
 @Component({
   components: {
@@ -188,7 +189,10 @@ export default class StudioList extends mixins(DrawerMixin) {
     return seed;
   }
 
-  studios = [] as any[];
+  get studios() {
+    return studioModule.items;
+  }
+
   fetchLoader = false;
   fetchError = false;
   fetchingRandom = false;
@@ -239,25 +243,26 @@ export default class StudioList extends mixins(DrawerMixin) {
   onSelectedLabelsChange(val: any) {
     localStorage.setItem("pm_studioInclude", val.include.join(","));
     localStorage.setItem("pm_studioExclude", val.exclude.join(","));
-
-    this.page = 1;
-    this.studios = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    studioModule.resetPagination();
   }
 
-  /* validCreation = false;
-  createStudioDialog = false;
-  createStudioName = "";
-  labelSelectorDialog = false;
-  addStudioLoader = false;
-
-  studioNameRules = [v => (!!v && !!v.length) || "Invalid studio name"]; */
-
   query = localStorage.getItem("pm_studioQuery") || "";
-  page = 1;
-  numResults = 0;
-  numPages = 0;
+
+  set page(page: number) {
+    studioModule.setPage(page);
+  }
+
+  get page() {
+    return studioModule.page;
+  }
+
+  get numResults() {
+    return studioModule.numResults;
+  }
+
+  get numPages() {
+    return studioModule.numPages;
+  }
 
   sortDir = localStorage.getItem("pm_studioSortDir") || "desc";
   sortDirItems = [
@@ -354,50 +359,35 @@ export default class StudioList extends mixins(DrawerMixin) {
   @Watch("ratingFilter", {})
   onRatingChange(newVal: number) {
     localStorage.setItem("pm_studioRating", newVal.toString());
-    this.page = 1;
-    this.studios = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    studioModule.resetPagination();
     this.loadPage(this.page);
   }
 
   @Watch("favoritesOnly")
   onFavoriteChange(newVal: boolean) {
     localStorage.setItem("pm_studioFavorite", "" + newVal);
-    this.page = 1;
-    this.studios = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    studioModule.resetPagination();
     this.loadPage(this.page);
   }
 
   @Watch("bookmarksOnly")
   onBookmarkChange(newVal: boolean) {
     localStorage.setItem("pm_studioBookmark", "" + newVal);
-    this.page = 1;
-    this.studios = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    studioModule.resetPagination();
     this.loadPage(this.page);
   }
 
   @Watch("sortDir")
   onSortDirChange(newVal: string) {
     localStorage.setItem("pm_studioSortDir", newVal);
-    this.page = 1;
-    this.studios = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    studioModule.resetPagination();
     this.loadPage(this.page);
   }
 
   @Watch("sortBy")
   onSortChange(newVal: string) {
     localStorage.setItem("pm_studioSortBy", newVal);
-    this.page = 1;
-    this.studios = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    studioModule.resetPagination();
     this.loadPage(this.page);
   }
 
@@ -410,10 +400,7 @@ export default class StudioList extends mixins(DrawerMixin) {
     localStorage.setItem("pm_studioQuery", newVal || "");
 
     this.waiting = true;
-    this.page = 1;
-    this.studios = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    studioModule.resetPagination();
 
     this.resetTimeout = setTimeout(() => {
       this.waiting = false;
@@ -496,9 +483,11 @@ export default class StudioList extends mixins(DrawerMixin) {
     this.fetchPage(page)
       .then(result => {
         this.fetchError = false;
-        this.studios = result.items;
-        this.numResults = result.numItems;
-        this.numPages = result.numPages;
+        studioModule.setPagination({
+          items: result.items,
+          numResults: result.numItems,
+          numPages: result.numPages
+        });
       })
       .catch(err => {
         console.error(err);
@@ -510,7 +499,7 @@ export default class StudioList extends mixins(DrawerMixin) {
   }
 
   mounted() {
-    this.loadPage(1);
+    if (!this.studios.length) this.loadPage(1);
   }
 
   beforeMount() {

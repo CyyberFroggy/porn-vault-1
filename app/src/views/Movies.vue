@@ -207,6 +207,7 @@ import IMovie from "../types/movie";
 import movieFragment from "../fragments/movie";
 import DrawerMixin from "../mixins/drawer";
 import { mixins } from "vue-class-component";
+import { movieModule } from "../store/movie";
 
 @Component({
   components: {
@@ -227,7 +228,10 @@ export default class MovieList extends mixins(DrawerMixin) {
     return seed;
   }
 
-  movies = [] as IMovie[];
+  get movies() {
+    return movieModule.items;
+  }
+
   fetchLoader = false;
   fetchError = false;
   fetchingRandom = false;
@@ -278,11 +282,7 @@ export default class MovieList extends mixins(DrawerMixin) {
   onSelectedLabelsChange(val: any) {
     localStorage.setItem("pm_movieInclude", val.include.join(","));
     localStorage.setItem("pm_movieExclude", val.exclude.join(","));
-
-    this.page = 1;
-    this.movies = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    movieModule.resetPagination();
   }
 
   validCreation = false;
@@ -294,9 +294,22 @@ export default class MovieList extends mixins(DrawerMixin) {
   movieNameRules = [v => (!!v && !!v.length) || "Invalid movie name"];
 
   query = localStorage.getItem("pm_movieQuery") || "";
-  page = 1;
-  numResults = 0;
-  numPages = 0;
+
+  set page(page: number) {
+    movieModule.setPage(page);
+  }
+
+  get page() {
+    return movieModule.page;
+  }
+
+  get numResults() {
+    return movieModule.numResults;
+  }
+
+  get numPages() {
+    return movieModule.numPages;
+  }
 
   sortDir = localStorage.getItem("pm_movieSortDir") || "desc";
   sortDirItems = [
@@ -351,17 +364,6 @@ export default class MovieList extends mixins(DrawerMixin) {
   ratingFilter = parseInt(localStorage.getItem("pm_movieRating") || "0");
 
   resetTimeout = null as NodeJS.Timeout | null;
-
-  /* useDVDCoverRatio = (() => {
-    const fromLocalStorage = localStorage.getItem("pm_movieDVDRatio");
-    if (fromLocalStorage) return fromLocalStorage == "true";
-    return true;
-  })(); */
-
-  /* @Watch("useDVDCoverRatio")
-  onRatioChange(newVal: boolean) {
-    localStorage.setItem("pm_movieDVDRatio", "" + newVal);
-  } */
 
   openCreateDialog() {
     this.createMovieDialog = true;
@@ -445,50 +447,35 @@ export default class MovieList extends mixins(DrawerMixin) {
   @Watch("ratingFilter", {})
   onRatingChange(newVal: number) {
     localStorage.setItem("pm_movieRating", newVal.toString());
-    this.page = 1;
-    this.movies = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    movieModule.resetPagination();
     this.loadPage(this.page);
   }
 
   @Watch("favoritesOnly")
   onFavoriteChange(newVal: boolean) {
     localStorage.setItem("pm_movieFavorite", "" + newVal);
-    this.page = 1;
-    this.movies = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    movieModule.resetPagination();
     this.loadPage(this.page);
   }
 
   @Watch("bookmarksOnly")
   onBookmarkChange(newVal: boolean) {
     localStorage.setItem("pm_movieBookmark", "" + newVal);
-    this.page = 1;
-    this.movies = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    movieModule.resetPagination();
     this.loadPage(this.page);
   }
 
   @Watch("sortDir")
   onSortDirChange(newVal: string) {
     localStorage.setItem("pm_movieSortDir", newVal);
-    this.page = 1;
-    this.movies = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    movieModule.resetPagination();
     this.loadPage(this.page);
   }
 
   @Watch("sortBy")
   onSortChange(newVal: string) {
     localStorage.setItem("pm_movieSortBy", newVal);
-    this.page = 1;
-    this.movies = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    movieModule.resetPagination();
     this.loadPage(this.page);
   }
 
@@ -501,10 +488,7 @@ export default class MovieList extends mixins(DrawerMixin) {
     localStorage.setItem("pm_movieQuery", newVal || "");
 
     this.waiting = true;
-    this.page = 1;
-    this.movies = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    movieModule.resetPagination();
 
     this.resetTimeout = setTimeout(() => {
       this.waiting = false;
@@ -514,10 +498,7 @@ export default class MovieList extends mixins(DrawerMixin) {
 
   @Watch("selectedLabels")
   onLabelChange() {
-    this.page = 1;
-    this.movies = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    movieModule.resetPagination();
     this.loadPage(this.page);
   }
 
@@ -591,9 +572,11 @@ export default class MovieList extends mixins(DrawerMixin) {
     this.fetchPage(page)
       .then(result => {
         this.fetchError = false;
-        this.movies = result.items;
-        this.numResults = result.numItems;
-        this.numPages = result.numPages;
+        movieModule.setPagination({
+          items: result.items,
+          numResults: result.numItems,
+          numPages: result.numPages
+        });
       })
       .catch(err => {
         console.error(err);
@@ -605,7 +588,7 @@ export default class MovieList extends mixins(DrawerMixin) {
   }
 
   mounted() {
-    this.loadPage(1);
+    if (!this.movies.length) this.loadPage(1);
   }
 
   beforeMount() {

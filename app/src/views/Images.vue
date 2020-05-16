@@ -203,6 +203,7 @@ import IImage from "../types/image";
 import ILabel from "../types/label";
 import DrawerMixin from "../mixins/drawer";
 import { mixins } from "vue-class-component";
+import { imageModule } from "../store/image";
 
 @Component({
   components: {
@@ -225,7 +226,10 @@ export default class ImageList extends mixins(DrawerMixin) {
     return seed;
   }
 
-  images = [] as IImage[];
+  get images() {
+    return imageModule.items;
+  }
+
   fetchLoader = false;
   fetchError = false;
   fetchingRandom = false;
@@ -248,19 +252,28 @@ export default class ImageList extends mixins(DrawerMixin) {
   onSelectedLabelsChange(val: any) {
     localStorage.setItem("pm_imageInclude", val.include.join(","));
     localStorage.setItem("pm_imageExclude", val.exclude.join(","));
-
-    this.page = 1;
-    this.images = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    imageModule.resetPagination();
   }
 
   largeThumbs = localStorage.getItem("pm_imageLargeThumbs") == "true" || false;
 
   query = localStorage.getItem("pm_imageQuery") || "";
-  page = 1;
-  numResults = 0;
-  numPages = 0;
+
+  set page(page: number) {
+    imageModule.setPage(page);
+  }
+
+  get page() {
+    return imageModule.page;
+  }
+
+  get numResults() {
+    return imageModule.numResults;
+  }
+
+  get numPages() {
+    return imageModule.numPages;
+  }
 
   sortDir = localStorage.getItem("pm_imageSortDir") || "desc";
   sortDirItems = [
@@ -332,9 +345,7 @@ export default class ImageList extends mixins(DrawerMixin) {
       }
     })
       .then(res => {
-        for (const id of this.selectedImages) {
-          this.images = this.images.filter(image => image._id != id);
-        }
+        imageModule.removeImages(this.selectedImages);
         this.selectedImages = [];
         this.deleteSelectedImagesDialog = false;
       })
@@ -386,59 +397,41 @@ export default class ImageList extends mixins(DrawerMixin) {
   @Watch("ratingFilter", {})
   onRatingChange(newVal: number) {
     localStorage.setItem("pm_imageRating", newVal.toString());
-    this.page = 1;
-    this.images = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    imageModule.resetPagination();
     this.loadPage(this.page);
   }
 
   @Watch("favoritesOnly")
   onFavoriteChange(newVal: boolean) {
     localStorage.setItem("pm_imageFavorite", "" + newVal);
-    this.page = 1;
-    this.images = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    imageModule.resetPagination();
     this.loadPage(this.page);
   }
 
   @Watch("bookmarksOnly")
   onBookmarkChange(newVal: boolean) {
     localStorage.setItem("pm_imageBookmark", "" + newVal);
-    this.page = 1;
-    this.images = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    imageModule.resetPagination();
     this.loadPage(this.page);
   }
 
   @Watch("sortDir")
   onSortDirChange(newVal: string) {
     localStorage.setItem("pm_imageSortDir", newVal);
-    this.page = 1;
-    this.images = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    imageModule.resetPagination();
     this.loadPage(this.page);
   }
 
   @Watch("sortBy")
   onSortChange(newVal: string) {
     localStorage.setItem("pm_imageSortBy", newVal);
-    this.page = 1;
-    this.images = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    imageModule.resetPagination();
     this.loadPage(this.page);
   }
 
   @Watch("selectedLabels")
   onLabelChange() {
-    this.page = 1;
-    this.images = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    imageModule.resetPagination();
     this.loadPage(this.page);
   }
 
@@ -451,10 +444,7 @@ export default class ImageList extends mixins(DrawerMixin) {
     localStorage.setItem("pm_imageQuery", newVal || "");
 
     this.waiting = true;
-    this.page = 1;
-    this.images = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    imageModule.resetPagination();
 
     this.resetTimeout = setTimeout(() => {
       this.waiting = false;
@@ -546,9 +536,11 @@ export default class ImageList extends mixins(DrawerMixin) {
     this.fetchPage(page)
       .then(result => {
         this.fetchError = false;
-        this.images = result.items;
-        this.numResults = result.numItems;
-        this.numPages = result.numPages;
+        imageModule.setPagination({
+          items: result.items,
+          numResults: result.numItems,
+          numPages: result.numPages
+        });
       })
       .catch(err => {
         console.error(err);
@@ -560,7 +552,7 @@ export default class ImageList extends mixins(DrawerMixin) {
   }
 
   mounted() {
-    this.loadPage(1);
+    if (!this.images.length) this.loadPage(1);
   }
 
   beforeMount() {

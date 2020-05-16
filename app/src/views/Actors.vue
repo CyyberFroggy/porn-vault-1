@@ -241,6 +241,7 @@ import IActor from "../types/actor";
 import ILabel from "../types/label";
 import DrawerMixin from "../mixins/drawer";
 import { mixins } from "vue-class-component";
+import { actorModule } from "../store/actor";
 
 @Component({
   components: {
@@ -261,7 +262,10 @@ export default class ActorList extends mixins(DrawerMixin) {
     return seed;
   }
 
-  actors = [] as IActor[];
+  get actors() {
+    return actorModule.items;
+  }
+
   fetchLoader = false;
   fetchError = false;
   fetchingRandom = false;
@@ -312,11 +316,7 @@ export default class ActorList extends mixins(DrawerMixin) {
   onSelectedLabelsChange(val: any) {
     localStorage.setItem("pm_actorInclude", val.include.join(","));
     localStorage.setItem("pm_actorExclude", val.exclude.join(","));
-
-    this.page = 1;
-    this.actors = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    actorModule.resetPagination();
   }
 
   validCreation = false;
@@ -330,9 +330,22 @@ export default class ActorList extends mixins(DrawerMixin) {
   actorNameRules = [v => (!!v && !!v.length) || "Invalid actor name"];
 
   query = localStorage.getItem("pm_actorQuery") || "";
-  page = 1;
-  numResults = 0;
-  numPages = 0;
+
+  set page(page: number) {
+    actorModule.setPage(page);
+  }
+
+  get page() {
+    return actorModule.page;
+  }
+
+  get numResults() {
+    return actorModule.numResults;
+  }
+
+  get numPages() {
+    return actorModule.numPages;
+  }
 
   sortDir = localStorage.getItem("pm_actorSortDir") || "desc";
   sortDirItems = [
@@ -521,59 +534,41 @@ export default class ActorList extends mixins(DrawerMixin) {
   @Watch("ratingFilter", {})
   onRatingChange(newVal: number) {
     localStorage.setItem("pm_actorRating", newVal.toString());
-    this.page = 1;
-    this.actors = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    actorModule.resetPagination();
     this.loadPage(this.page);
   }
 
   @Watch("favoritesOnly")
   onFavoriteChange(newVal: boolean) {
     localStorage.setItem("pm_actorFavorite", "" + newVal);
-    this.page = 1;
-    this.actors = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    actorModule.resetPagination();
     this.loadPage(this.page);
   }
 
   @Watch("bookmarksOnly")
   onBookmarkChange(newVal: boolean) {
     localStorage.setItem("pm_actorBookmark", "" + newVal);
-    this.page = 1;
-    this.actors = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    actorModule.resetPagination();
     this.loadPage(this.page);
   }
 
   @Watch("sortDir")
   onSortDirChange(newVal: string) {
     localStorage.setItem("pm_actorSortDir", newVal);
-    this.page = 1;
-    this.actors = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    actorModule.resetPagination();
     this.loadPage(this.page);
   }
 
   @Watch("sortBy")
   onSortChange(newVal: string) {
     localStorage.setItem("pm_actorSortBy", newVal);
-    this.page = 1;
-    this.actors = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    actorModule.resetPagination();
     this.loadPage(this.page);
   }
 
   @Watch("selectedLabels")
   onLabelChange() {
-    this.page = 1;
-    this.actors = [];
-    this.numResults = 0;
-    this.numPages = 0;
+    actorModule.resetPagination();
     this.loadPage(this.page);
   }
 
@@ -586,8 +581,7 @@ export default class ActorList extends mixins(DrawerMixin) {
     localStorage.setItem("pm_actorQuery", newVal || "");
 
     this.waiting = true;
-    this.page = 0;
-    this.actors = [];
+    actorModule.resetPagination();
 
     this.resetTimeout = setTimeout(() => {
       this.waiting = false;
@@ -670,9 +664,11 @@ export default class ActorList extends mixins(DrawerMixin) {
     this.fetchPage(page)
       .then(result => {
         this.fetchError = false;
-        this.actors = result.items;
-        this.numResults = result.numItems;
-        this.numPages = result.numPages;
+        actorModule.setPagination({
+          items: result.items,
+          numResults: result.numItems,
+          numPages: result.numPages
+        });
       })
       .catch(err => {
         console.error(err);
@@ -684,7 +680,7 @@ export default class ActorList extends mixins(DrawerMixin) {
   }
 
   mounted() {
-    this.loadPage(1);
+    if (!this.actors.length) this.loadPage(1);
   }
 
   beforeMount() {
