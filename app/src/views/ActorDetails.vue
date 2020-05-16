@@ -1620,6 +1620,9 @@ export default class ActorDetails extends Vue {
         id: (<any>this).$route.params.id
       }
     }).then(res => {
+      /* console.log(this.$store.state);
+      console.log(actorModule); */
+      // this.$store.commit("actor/setCurrent", res.data.getActorById);
       actorModule.setCurrent(res.data.getActorById);
       this.editCustomFields = res.data.getActorById.customFields;
     });

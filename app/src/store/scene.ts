@@ -127,4 +127,4 @@ class SceneModule extends VuexModule {
 }
 
 import store from "./index";
-export const sceneModule = new SceneModule({ store, name: "scene" });
+export const sceneModule = new SceneModule({ store, name: "scenes" });

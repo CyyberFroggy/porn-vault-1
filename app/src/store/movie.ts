@@ -131,4 +131,4 @@ class MovieModule extends VuexModule {
 }
 
 import store from "./index";
-export const movieModule = new MovieModule({ store, name: "movie" });
+export const movieModule = new MovieModule({ store, name: "movies" });

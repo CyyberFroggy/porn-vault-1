@@ -91,4 +91,4 @@ class StudioModule extends VuexModule {
 }
 
 import store from "./index";
-export const studioModule = new StudioModule({ store, name: "studio" });
+export const studioModule = new StudioModule({ store, name: "studios" });

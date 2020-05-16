@@ -96,7 +96,7 @@
               <v-icon>mdi-dice-3-outline</v-icon>
             </v-btn>
           </template>
-          <span>Reroll shuffle seed</span>
+          <span>Reshuffle</span>
         </v-tooltip>
       </div>
       <v-row v-if="!fetchLoader && numResults">

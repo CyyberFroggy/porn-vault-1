@@ -153,4 +153,4 @@ class ActorModule extends VuexModule {
 
 import store from "./index";
 import IActor from "@/types/actor";
-export const actorModule = new ActorModule({ store, name: "actor" });
+export const actorModule = new ActorModule({ store, name: "actors" });

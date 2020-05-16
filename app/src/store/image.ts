@@ -45,4 +45,4 @@ class ImageModule extends VuexModule {
 
 import store from "./index";
 import IImage from "@/types/image";
-export const imageModule = new ImageModule({ store, name: "actor" });
+export const imageModule = new ImageModule({ store, name: "images" });
