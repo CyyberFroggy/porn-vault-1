@@ -235,8 +235,11 @@ export function getConfig() {
   return loadedConfig as IConfig;
 }
 
+/**
+ * @returns a function that will stop watching the config file
+ */
 export function watchConfig() {
-  chokidar.watch(configFile).on("change", async () => {
+  const watcher = chokidar.watch(configFile).on("change", async () => {
     logger.message(`${configFile} changed, reloading...`);
 
     let newConfig = null as IConfig | null;
@@ -263,4 +266,10 @@ export function watchConfig() {
       logger.warn("Couldn't load config, try again");
     }
   });
+
+  return async () => watcher.close();
+}
+
+export function resetLoadedConfig() {
+  loadedConfig = null;
 }
