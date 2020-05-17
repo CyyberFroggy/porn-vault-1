@@ -25,7 +25,7 @@ coverage
 node_modules
 build/
 db\.json
-*.mp4
+
 
 config\.json
 
