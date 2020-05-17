@@ -38,7 +38,7 @@ export interface IImageSearchDoc {
 }
 
 export async function updateImages(images: Image[]) {
-  return index.update(await mapAsync(images, createImageSearchDoc), FIELDS);
+  return index.update(await mapAsync(images, createImageSearchDoc));
 }
 
 const blacklist = [
@@ -97,13 +97,13 @@ export async function indexImages(images: Image[]) {
 export async function addImageSearchDocs(docs: IImageSearchDoc[]) {
   logger.log(`Indexing ${docs.length} items...`);
   const timeNow = +new Date();
-  const res = await index.index(docs, FIELDS);
+  const res = await index.index(docs);
   logger.log(`Gianna indexing done in ${(Date.now() - timeNow) / 1000}s`);
   return res;
 }
 
 export async function buildImageIndex() {
-  index = await Gianna.createIndex("images");
+  index = await Gianna.createIndex("images", FIELDS);
 
   const timeNow = +new Date();
   const loader = ora("Building image index...").start();

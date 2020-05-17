@@ -62,7 +62,7 @@ export async function createActorSearchDoc(
 }
 
 export async function updateActors(scenes: Actor[]) {
-  return index.update(await mapAsync(scenes, createActorSearchDoc), FIELDS);
+  return index.update(await mapAsync(scenes, createActorSearchDoc));
 }
 
 export async function indexActors(scenes: Actor[]) {
@@ -88,13 +88,13 @@ export async function indexActors(scenes: Actor[]) {
 export async function addActorSearchDocs(docs: IActorSearchDoc[]) {
   logger.log(`Indexing ${docs.length} items...`);
   const timeNow = +new Date();
-  const res = await index.index(docs, FIELDS);
+  const res = await index.index(docs);
   logger.log(`Gianna indexing done in ${(Date.now() - timeNow) / 1000}s`);
   return res;
 }
 
 export async function buildActorIndex() {
-  index = await Gianna.createIndex("actors");
+  index = await Gianna.createIndex("actors", FIELDS);
 
   const timeNow = +new Date();
   const loader = ora("Building actor index...").start();

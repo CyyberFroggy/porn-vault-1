@@ -61,13 +61,13 @@ export async function createMovieSearchDoc(
 async function addMovieSearchDocs(docs: IMovieSearchDoc[]) {
   logger.log(`Indexing ${docs.length} items...`);
   const timeNow = +new Date();
-  const res = await index.index(docs, FIELDS);
+  const res = await index.index(docs);
   logger.log(`Gianna indexing done in ${(Date.now() - timeNow) / 1000}s`);
   return res;
 }
 
 export async function updateMovies(movies: Movie[]) {
-  return index.update(await mapAsync(movies, createMovieSearchDoc), FIELDS);
+  return index.update(await mapAsync(movies, createMovieSearchDoc));
 }
 
 export async function indexMovies(movies: Movie[]) {
@@ -91,7 +91,7 @@ export async function indexMovies(movies: Movie[]) {
 }
 
 export async function buildMovieIndex() {
-  index = await Gianna.createIndex("movies");
+  index = await Gianna.createIndex("movies", FIELDS);
 
   const timeNow = +new Date();
   const loader = ora("Building movie index...").start();

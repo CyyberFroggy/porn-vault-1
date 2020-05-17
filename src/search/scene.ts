@@ -71,13 +71,13 @@ const FIELDS = [
 async function addSceneSearchDocs(docs: ISceneSearchDoc[]) {
   logger.log(`Indexing ${docs.length} items...`);
   const timeNow = +new Date();
-  const res = await index.index(docs, FIELDS);
+  const res = await index.index(docs);
   logger.log(`Gianna indexing done in ${(Date.now() - timeNow) / 1000}s`);
   return res;
 }
 
 export async function updateScenes(scenes: Scene[]) {
-  return index.update(await mapAsync(scenes, createSceneSearchDoc), FIELDS);
+  return index.update(await mapAsync(scenes, createSceneSearchDoc));
 }
 
 export async function indexScenes(scenes: Scene[]) {
@@ -263,7 +263,7 @@ export async function searchScenes(query: string, shuffleSeed = "default") {
 }
 
 export async function buildSceneIndex() {
-  index = await Gianna.createIndex("scenes");
+  index = await Gianna.createIndex("scenes", FIELDS);
 
   const timeNow = +new Date();
   const loader = ora("Building scene index...").start();

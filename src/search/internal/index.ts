@@ -55,17 +55,15 @@ export namespace Gianna {
       await Axios.delete(`http://localhost:8001/index/${this.name}/clear`);
     }
 
-    async update(items: T[], fields: string[]) {
+    async update(items: T[]) {
       await Axios.patch(`http://localhost:8001/index/${this.name}`, {
         items,
-        fields,
       });
     }
 
-    async index(items: T[], fields: string[]) {
+    async index(items: T[]) {
       await Axios.post(`http://localhost:8001/index/${this.name}`, {
         items,
-        fields,
       });
     }
 
@@ -101,8 +99,10 @@ export namespace Gianna {
     }
   }
 
-  export async function createIndex(name: string) {
-    await Axios.put(`http://localhost:8001/index/${name}`);
+  export async function createIndex(name: string, fields: string[]) {
+    await Axios.put(`http://localhost:8001/index/${name}`, {
+      fields,
+    });
     return new Index(name);
   }
 }

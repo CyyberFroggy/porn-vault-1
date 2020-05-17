@@ -46,13 +46,13 @@ export async function createStudioSearchDoc(
 async function addStudioSearchDocs(docs: IStudioSearchDoc[]) {
   logger.log(`Indexing ${docs.length} items...`);
   const timeNow = +new Date();
-  const res = await index.index(docs, FIELDS);
+  const res = await index.index(docs);
   logger.log(`Gianna indexing done in ${(Date.now() - timeNow) / 1000}s`);
   return res;
 }
 
 export async function updateStudios(studios: Studio[]) {
-  return index.update(await mapAsync(studios, createStudioSearchDoc), FIELDS);
+  return index.update(await mapAsync(studios, createStudioSearchDoc));
 }
 
 export async function indexStudios(studios: Studio[]) {
@@ -76,7 +76,7 @@ export async function indexStudios(studios: Studio[]) {
 }
 
 export async function buildStudioIndex() {
-  index = await Gianna.createIndex("studios");
+  index = await Gianna.createIndex("studios", FIELDS);
 
   const timeNow = +new Date();
   const loader = ora("Building studio index...").start();
