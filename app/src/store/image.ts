@@ -8,6 +8,11 @@ class ImageModule extends VuexModule {
   items = [] as IImage[];
 
   @Mutation
+  unshift(items: IImage[]) {
+    this.items.unshift(...items);
+  }
+
+  @Mutation
   resetPagination() {
     this.items = [];
     this.numPages = 0;
