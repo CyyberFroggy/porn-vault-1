@@ -12,7 +12,13 @@ function killProcess(code = 0) {
       logger.log("Killing gianna...");
       giannaProcess.kill();
     }
-    process.exit(code);
+
+    // When running tests, we want to be able to cleanup any services,
+    // but we cannot overload the actual 'exit' otherwise mocha's
+    // exit code will not reflect the actual result of the tests
+    if (process.env.NODE_ENV !== "test") {
+      process.exit(code);
+    }
   };
 }
 
