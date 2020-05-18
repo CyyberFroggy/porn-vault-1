@@ -21,7 +21,10 @@ export default class Actor {
   favorite: boolean = false;
   bookmark: number | null = null;
   rating: number = 0;
-  customFields: any = {};
+  customFields: Record<
+    string,
+    boolean | string | number | string[] | null
+  > = {};
   labels?: string[]; // backwards compatibility
   studio?: string | null; // backwards compatibility
   description?: string | null = null;

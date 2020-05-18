@@ -12,7 +12,7 @@ const PAGE_SIZE = 24;
 
 export let index!: Gianna.Index<IActorSearchDoc>;
 
-const FIELDS = ["name", "aliases", "labelNames"];
+const FIELDS = ["name", "aliases", "labelNames", "custom"];
 
 export interface IActorSearchDoc {
   _id: string;
@@ -30,6 +30,7 @@ export interface IActorSearchDoc {
   age: number | null;
   numScenes: number;
   nationality: string | null;
+  custom: string[];
 }
 
 export async function createActorSearchDoc(
@@ -58,6 +59,9 @@ export async function createActorSearchDoc(
     nationality: actor.nationality
       ? getNationality(actor.nationality).nationality
       : null,
+    custom: Object.values(actor.customFields)
+      .filter((val) => typeof val != "number" && typeof val != "boolean")
+      .flat() as string[],
   };
 }
 
