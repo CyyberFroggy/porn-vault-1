@@ -50,7 +50,7 @@ export default gql`
     numActors: Int!
     getActors(query: String, seed: String): ActorSearchResults!
     getActorById(id: String!): Actor
-    topActors(num: Int): [Actor!]!
+    topActors(skip: Int, take: Int): [Actor!]!
     getActorsWithoutScenes(num: Int): [Actor!]!
     getActorsWithoutLabels(num: Int): [Actor!]!
     actorGraph: ActorGraph!

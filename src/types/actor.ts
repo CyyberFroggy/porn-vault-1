@@ -4,9 +4,9 @@ import Scene from "./scene";
 import { mapAsync, createObjectSet } from "./utility";
 import * as logger from "../logger";
 import moment = require("moment");
-import { actorCollection, labelledItemCollection } from "../database";
-import LabelledItem from "./labelled_item";
+import { actorCollection } from "../database";
 import SceneView from "./watch";
+import { searchActors } from "../search/actor";
 
 export default class Actor {
   _id: string;
@@ -70,25 +70,11 @@ export default class Actor {
     return numScenes / 5 + numViews + +actor.favorite * 5 + actor.rating;
   }
 
-  static async getTopActors() {
-    /* const actors = await Actor.getAll();
-
-    const scores = await mapAsync(actors, async (actor) => {
-      const score =
-        (await Scene.getByActor(actor._id)).length / 5 +
-        (await Actor.getWatches(actor)).length +
-        +actor.favorite * 5 +
-        actor.rating;
-
-      return {
-        actor,
-        score,
-      };
-    });
-
-    scores.sort((a, b) => b.score - a.score);
-    return scores.map((s) => s.actor); */
-    return []; // TODO: redo by sorting 'score'
+  static async getTopActors(skip = 0, take = 0) {
+    const result = await searchActors(
+      `query:'' sortBy:score sortDir:desc skip:${skip} take:${take}`
+    );
+    return mapAsync(result.items, Actor.getById);
   }
 
   constructor(name: string, aliases: string[] = []) {

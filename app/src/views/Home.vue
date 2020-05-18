@@ -100,14 +100,7 @@
         <v-col cols="12" sm="6">
           <QueueInfo />
 
-          <!-- <v-card v-if="topActors.length" class="mb-3" style="border-radius: 10px">
-            <v-card-title>
-              <v-icon medium class="mr-2">mdi-heart</v-icon>Your favorites
-            </v-card-title>
-            <v-card-text>
-              <ActorGrid :value="topActors" />
-            </v-card-text>
-          </v-card>-->
+          <TopActors />
 
           <!-- <v-card v-if="actorsWithoutLabels.length" class="mb-3" style="border-radius: 10px">
             <v-card-title>
@@ -144,12 +137,14 @@ import IScene from "../types/scene";
 import QueueInfo from "../components/QueueInfo.vue";
 import ActorGrid from "../components/ActorGrid.vue";
 import { contextModule } from "../store/context";
+import TopActors from "../components/TopActors.vue";
 
 @Component({
   components: {
     ActorCard,
     QueueInfo,
-    ActorGrid
+    ActorGrid,
+    TopActors
   }
 })
 export default class Home extends Vue {
@@ -158,21 +153,12 @@ export default class Home extends Vue {
   numMovies = 0;
   numImages = 0;
 
-  topActors = [] as IActor[];
   actorsWithoutScenes = [] as IActor[];
   scenesWithoutActors = [] as IScene[];
 
   actorsWithoutLabels = [] as IActor[];
   scenesWithoutLabels = [] as IScene[];
   scenesWithoutStudios = [] as IScene[];
-
-  thumbnail(actor: IActor | IScene) {
-    if (actor.thumbnail)
-      return `${serverBase}/image/${
-        actor.thumbnail._id
-      }?password=${localStorage.getItem("password")}`;
-    return ``;
-  }
 
   beforeMount() {
     ApolloClient.query({

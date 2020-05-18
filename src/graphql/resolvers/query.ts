@@ -90,8 +90,8 @@ export default {
       .slice(0, num || 12);
   },
 
-  async topActors(_, { num }: { num: number }) {
-    return (await Actor.getTopActors()).slice(0, num || 12);
+  async topActors(_, { skip, take }: { skip: number; take: number }) {
+    return await Actor.getTopActors(skip, take);
   },
 
   async getQueueInfo() {

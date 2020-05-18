@@ -117,6 +117,7 @@ export default (query?: string) => {
   }
 
   if (!options.query && options.sortBy == "relevance") {
+    console.log("No search query, defaulting to addedOn");
     options.sortBy = "addedOn";
     options.sortDir = "desc";
   }

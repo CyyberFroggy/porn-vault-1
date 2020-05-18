@@ -199,6 +199,7 @@ export async function searchActors(query: string, shuffleSeed = "default") {
         bookmark: "number",
         numScenes: "number",
         numViews: "number",
+        score: "number",
       }[options.sortBy];
       sort = {
         sort_by: options.sortBy,
