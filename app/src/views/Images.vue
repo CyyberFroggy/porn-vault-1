@@ -216,7 +216,7 @@ import { imageModule } from "../store/image";
 })
 export default class ImageList extends mixins(DrawerMixin) {
   addNewItem(image: IImage) {
-    imageModule.unshift([image]);
+    this.images.unshift(image);
   }
 
   get showSidenav() {
@@ -230,9 +230,7 @@ export default class ImageList extends mixins(DrawerMixin) {
     return seed;
   }
 
-  get images() {
-    return imageModule.items;
-  }
+  images = [] as IImage[];
 
   fetchLoader = false;
   fetchError = false;
@@ -349,7 +347,9 @@ export default class ImageList extends mixins(DrawerMixin) {
       }
     })
       .then(res => {
-        imageModule.removeImages(this.selectedImages);
+        for (const id of this.selectedImages) {
+          this.images = this.images.filter(img => img._id != id);
+        }
         this.selectedImages = [];
         this.deleteSelectedImagesDialog = false;
       })
@@ -541,10 +541,10 @@ export default class ImageList extends mixins(DrawerMixin) {
       .then(result => {
         this.fetchError = false;
         imageModule.setPagination({
-          items: result.items,
           numResults: result.numItems,
           numPages: result.numPages
         });
+        this.images = result.items;
       })
       .catch(err => {
         console.error(err);
@@ -555,8 +555,12 @@ export default class ImageList extends mixins(DrawerMixin) {
       });
   }
 
+  refreshPage() {
+    this.loadPage(imageModule.page);
+  }
+
   mounted() {
-    if (!this.images.length) this.loadPage(1);
+    if (!this.images.length) this.refreshPage();
   }
 
   beforeMount() {

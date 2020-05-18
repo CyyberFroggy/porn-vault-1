@@ -7,16 +7,16 @@ class StudioModule extends VuexModule {
   page = 1;
   numResults = 0;
   numPages = 0;
-  items = [] as any[];
+  // items = [] as any[];
 
-  @Mutation
+  /* @Mutation
   unshift(items: any[]) {
     this.items.unshift(...items);
-  }
+  } */
 
   @Mutation
   resetPagination() {
-    this.items = [];
+    // this.items = [];
     this.numPages = 0;
     this.numResults = 0;
     this.page = 1;
@@ -26,17 +26,18 @@ class StudioModule extends VuexModule {
   setPage(num: number) {
     this.page = num;
   }
+
   @Mutation
   setPagination({
-    items,
+    // items,
     numResults,
     numPages,
   }: {
-    items: any[];
+    // items: any[];
     numResults: number;
     numPages: number;
   }) {
-    this.items = items;
+    // this.items = items;
     this.numResults = numResults;
     this.numPages = numPages;
   }

@@ -288,9 +288,7 @@ export default class SceneList extends mixins(DrawerMixin) {
     return contextModule.showSidenav;
   }
 
-  get scenes() {
-    return sceneModule.items;
-  }
+  scenes = [] as IScene[];
 
   rerollSeed() {
     const seed = Math.random().toString(36);
@@ -473,7 +471,9 @@ export default class SceneList extends mixins(DrawerMixin) {
       }
     })
       .then(res => {
-        sceneModule.removeScenes(this.selectedScenes);
+        for (const id of this.selectedScenes) {
+          this.scenes = this.scenes.filter(scene => scene._id != id);
+        }
         this.selectedScenes = [];
         this.deleteSelectedScenesDialog = false;
       })
@@ -754,10 +754,10 @@ export default class SceneList extends mixins(DrawerMixin) {
       .then(result => {
         this.fetchError = false;
         sceneModule.setPagination({
-          items: result.items,
           numResults: result.numItems,
           numPages: result.numPages
         });
+        this.scenes = result.items;
       })
       .catch(err => {
         console.error(err);
@@ -768,8 +768,12 @@ export default class SceneList extends mixins(DrawerMixin) {
       });
   }
 
+  refreshPage() {
+    this.loadPage(sceneModule.page);
+  }
+
   mounted() {
-    if (!this.scenes.length) this.loadPage(1);
+    if (!this.scenes.length) this.refreshPage();
   }
 
   beforeMount() {

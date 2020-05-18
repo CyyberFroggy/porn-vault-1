@@ -5,16 +5,16 @@ class ImageModule extends VuexModule {
   page = 1;
   numResults = 0;
   numPages = 0;
-  items = [] as IImage[];
+  // items = [] as IImage[];
 
-  @Mutation
+  /* @Mutation
   unshift(items: IImage[]) {
     this.items.unshift(...items);
-  }
+  } */
 
   @Mutation
   resetPagination() {
-    this.items = [];
+    // this.items = [];
     this.numPages = 0;
     this.numResults = 0;
     this.page = 1;
@@ -25,24 +25,24 @@ class ImageModule extends VuexModule {
     this.page = num;
   }
 
-  @Mutation
+  /* @Mutation
   removeImages(ids: string[]) {
     for (const id of ids) {
       this.items = this.items.filter((img) => img._id != id);
     }
-  }
+  } */
 
   @Mutation
   setPagination({
-    items,
+    // items,
     numResults,
     numPages,
   }: {
-    items: IImage[];
+    // items: IImage[];
     numResults: number;
     numPages: number;
   }) {
-    this.items = items;
+    // this.items = items;
     this.numResults = numResults;
     this.numPages = numPages;
   }

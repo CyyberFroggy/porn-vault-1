@@ -192,9 +192,7 @@ export default class StudioList extends mixins(DrawerMixin) {
     return seed;
   }
 
-  get studios() {
-    return studioModule.items;
-  }
+  studios = [] as any[];
 
   fetchLoader = false;
   fetchError = false;
@@ -349,7 +347,7 @@ export default class StudioList extends mixins(DrawerMixin) {
         }
       });
 
-      studioModule.unshift([res.data.addStudio]);
+      this.studios.unshift(res.data.addStudio);
     } catch (error) {
       console.error(error);
     }
@@ -487,10 +485,10 @@ export default class StudioList extends mixins(DrawerMixin) {
       .then(result => {
         this.fetchError = false;
         studioModule.setPagination({
-          items: result.items,
           numResults: result.numItems,
           numPages: result.numPages
         });
+        this.studios = result.items;
       })
       .catch(err => {
         console.error(err);
@@ -501,8 +499,12 @@ export default class StudioList extends mixins(DrawerMixin) {
       });
   }
 
+  refreshPage() {
+    this.loadPage(studioModule.page);
+  }
+
   mounted() {
-    if (!this.studios.length) this.loadPage(1);
+    if (!this.studios.length) this.refreshPage();
   }
 
   beforeMount() {

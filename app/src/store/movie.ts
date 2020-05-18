@@ -10,16 +10,16 @@ class MovieModule extends VuexModule {
   page = 1;
   numResults = 0;
   numPages = 0;
-  items = [] as IMovie[];
+  // items = [] as IMovie[];
 
-  @Mutation
+  /* @Mutation
   unshift(items: IMovie[]) {
     this.items.unshift(...items);
-  }
+  } */
 
   @Mutation
   resetPagination() {
-    this.items = [];
+    // this.items = [];
     this.numPages = 0;
     this.numResults = 0;
     this.page = 1;
@@ -29,17 +29,18 @@ class MovieModule extends VuexModule {
   setPage(num: number) {
     this.page = num;
   }
+
   @Mutation
   setPagination({
-    items,
+    // items,
     numResults,
     numPages,
   }: {
-    items: IMovie[];
+    // items: IMovie[];
     numResults: number;
     numPages: number;
   }) {
-    this.items = items;
+    // this.items = items;
     this.numResults = numResults;
     this.numPages = numPages;
   }

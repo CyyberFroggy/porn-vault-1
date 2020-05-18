@@ -9,11 +9,11 @@ class SceneModule extends VuexModule {
   page = 1;
   numResults = 0;
   numPages = 0;
-  items = [] as IScene[];
+  // items = [] as IScene[];
 
   @Mutation
   resetPagination() {
-    this.items = [];
+    // this.items = [];
     this.numPages = 0;
     this.numResults = 0;
     this.page = 1;
@@ -24,24 +24,24 @@ class SceneModule extends VuexModule {
     this.page = num;
   }
 
-  @Mutation
+  /* @Mutation
   removeScenes(ids: string[]) {
     for (const id of ids) {
       this.items = this.items.filter((scene) => scene._id != id);
     }
-  }
+  } */
 
   @Mutation
   setPagination({
-    items,
+    // items,
     numResults,
     numPages,
   }: {
-    items: IScene[];
+    // items: IScene[];
     numResults: number;
     numPages: number;
   }) {
-    this.items = items;
+    // this.items = items;
     this.numResults = numResults;
     this.numPages = numPages;
   }

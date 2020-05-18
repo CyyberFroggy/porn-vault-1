@@ -269,9 +269,7 @@ export default class ActorList extends mixins(DrawerMixin) {
     return seed;
   }
 
-  get actors() {
-    return actorModule.items;
-  }
+  actors = [] as IActor[];
 
   fields = [] as any[];
   fetchLoader = false;
@@ -438,7 +436,7 @@ export default class ActorList extends mixins(DrawerMixin) {
         }
       })
         .then(res => {
-          actorModule.unshift([res.data.addActor]);
+          this.actors.unshift(res.data.addActor);
           resolve();
         })
         .catch(err => {
@@ -474,7 +472,7 @@ export default class ActorList extends mixins(DrawerMixin) {
       }
     })
       .then(res => {
-        actorModule.unshift([res.data.addActor]);
+        this.actors.unshift(res.data.addActor);
         this.createActorDialog = false;
         this.createActorName = "";
         this.createActorAliases = [];
@@ -666,6 +664,10 @@ export default class ActorList extends mixins(DrawerMixin) {
     }
   }
 
+  refreshPage() {
+    this.loadPage(actorModule.page);
+  }
+
   loadPage(page: number) {
     this.fetchLoader = true;
 
@@ -673,10 +675,10 @@ export default class ActorList extends mixins(DrawerMixin) {
       .then(result => {
         this.fetchError = false;
         actorModule.setPagination({
-          items: result.items,
           numResults: result.numItems,
           numPages: result.numPages
         });
+        this.actors = result.items;
       })
       .catch(err => {
         console.error(err);
@@ -688,7 +690,7 @@ export default class ActorList extends mixins(DrawerMixin) {
   }
 
   mounted() {
-    if (!this.actors.length) this.loadPage(1);
+    if (!this.actors.length) this.refreshPage();
   }
 
   beforeMount() {

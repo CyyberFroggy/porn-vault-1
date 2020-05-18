@@ -234,9 +234,7 @@ export default class MovieList extends mixins(DrawerMixin) {
     return seed;
   }
 
-  get movies() {
-    return movieModule.items;
-  }
+  movies = [] as IMovie[];
 
   fetchLoader = false;
   fetchError = false;
@@ -398,7 +396,7 @@ export default class MovieList extends mixins(DrawerMixin) {
         }
       })
         .then(res => {
-          movieModule.unshift([res.data.addMovie]);
+          this.movies.unshift(res.data.addMovie);
           resolve(res.data.addMovie);
         })
         .catch(err => {
@@ -431,7 +429,7 @@ export default class MovieList extends mixins(DrawerMixin) {
       }
     })
       .then(res => {
-        movieModule.unshift([res.data.addMovie]);
+        this.movies.unshift(res.data.addMovie);
         this.createMovieDialog = false;
         this.createMovieName = "";
         this.createMovieScenes = [];
@@ -579,10 +577,10 @@ export default class MovieList extends mixins(DrawerMixin) {
       .then(result => {
         this.fetchError = false;
         movieModule.setPagination({
-          items: result.items,
           numResults: result.numItems,
           numPages: result.numPages
         });
+        this.movies = result.items;
       })
       .catch(err => {
         console.error(err);
@@ -593,8 +591,12 @@ export default class MovieList extends mixins(DrawerMixin) {
       });
   }
 
+  refreshPage() {
+    this.loadPage(movieModule.page);
+  }
+
   mounted() {
-    if (!this.movies.length) this.loadPage(1);
+    if (!this.movies.length) this.refreshPage();
   }
 
   beforeMount() {
