@@ -74,6 +74,8 @@
           placeholder="Sort direction"
           :items="sortDirItems"
         ></v-select>
+
+        <!-- <CustomFieldFilter :fields="fields" /> -->
       </v-container>
     </v-navigation-drawer>
 
@@ -245,12 +247,14 @@ import ILabel from "../types/label";
 import DrawerMixin from "../mixins/drawer";
 import { mixins } from "vue-class-component";
 import { actorModule } from "../store/actor";
+import CustomFieldFilter from "../components/CustomFieldFilter.vue";
 
 @Component({
   components: {
     ActorCard,
     LabelSelector,
-    InfiniteLoading
+    InfiniteLoading,
+    CustomFieldFilter
   }
 })
 export default class ActorList extends mixins(DrawerMixin) {
@@ -269,6 +273,7 @@ export default class ActorList extends mixins(DrawerMixin) {
     return actorModule.items;
   }
 
+  fields = [] as any[];
   fetchLoader = false;
   fetchError = false;
   fetchingRandom = false;
@@ -695,10 +700,19 @@ export default class ActorList extends mixins(DrawerMixin) {
             name
             aliases
           }
+          getCustomFields {
+            _id
+            name
+            type
+            values
+            unit
+            target
+          }
         }
       `
     })
       .then(res => {
+        this.fields = res.data.getCustomFields;
         this.allLabels = res.data.getLabels;
         if (!this.allLabels.length) {
           this.selectedLabels.include = [];
