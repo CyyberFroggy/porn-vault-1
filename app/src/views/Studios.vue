@@ -87,6 +87,9 @@
           <span class="display-1 font-weight-bold mr-2">{{ fetchLoader ? "-" : numResults }}</span>
           <span class="title font-weight-regular">studios found</span>
         </div>
+        <v-btn @click="bulkImportDialog = true" icon>
+          <v-icon>mdi-plus</v-icon>
+        </v-btn>
         <v-btn :loading="fetchingRandom" @click="getRandom" icon>
           <v-icon>mdi-shuffle-variant</v-icon>
         </v-btn>
@@ -346,7 +349,7 @@ export default class StudioList extends mixins(DrawerMixin) {
         }
       });
 
-      this.studios.unshift(res.data.addStudio);
+      studioModule.unshift([res.data.addStudio]);
     } catch (error) {
       console.error(error);
     }

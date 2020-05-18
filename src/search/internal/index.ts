@@ -2,6 +2,7 @@
 
 import Axios from "axios";
 import * as logger from "../../logger";
+import { getConfig } from "../../config/index";
 
 export namespace Gianna {
   export interface ISearchResults {
@@ -52,32 +53,43 @@ export namespace Gianna {
     }
 
     async clear() {
-      await Axios.delete(`http://localhost:8001/index/${this.name}/clear`);
+      await Axios.delete(
+        `http://localhost:${getConfig().GIANNA_PORT}/index/${this.name}/clear`
+      );
     }
 
     async update(items: T[]) {
-      await Axios.patch(`http://localhost:8001/index/${this.name}`, {
-        items,
-      });
+      await Axios.patch(
+        `http://localhost:${getConfig().GIANNA_PORT}/index/${this.name}`,
+        {
+          items,
+        }
+      );
     }
 
     async index(items: T[]) {
-      await Axios.post(`http://localhost:8001/index/${this.name}`, {
-        items,
-      });
+      await Axios.post(
+        `http://localhost:${getConfig().GIANNA_PORT}/index/${this.name}`,
+        {
+          items,
+        }
+      );
     }
 
     async remove(items: string[]) {
-      await Axios.delete(`http://localhost:8001/index/${this.name}`, {
-        data: {
-          items,
-        },
-      });
+      await Axios.delete(
+        `http://localhost:${getConfig().GIANNA_PORT}/index/${this.name}`,
+        {
+          data: {
+            items,
+          },
+        }
+      );
     }
 
     async search(opts: ISearchOptions) {
       const res = await Axios.post(
-        `http://localhost:8001/index/${this.name}/search`,
+        `http://localhost:${getConfig().GIANNA_PORT}/index/${this.name}/search`,
         {
           filter: opts.filter,
           sort_by: opts.sort?.sort_by,
@@ -100,9 +112,12 @@ export namespace Gianna {
   }
 
   export async function createIndex(name: string, fields: string[]) {
-    await Axios.put(`http://localhost:8001/index/${name}`, {
-      fields,
-    });
+    await Axios.put(
+      `http://localhost:${getConfig().GIANNA_PORT}/index/${name}`,
+      {
+        fields,
+      }
+    );
     return new Index(name);
   }
 }

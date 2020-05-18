@@ -1,14 +1,19 @@
 import { spawn, ChildProcessWithoutNullStreams } from "child_process";
 import { type, arch } from "os";
 import * as logger from "./logger";
-import { existsAsync } from "./fs/async";
+import { existsAsync, unlinkAsync} from "./fs/async";
 import Axios from "axios";
 import { downloadFile } from "./ffmpeg-download";
 import { chmodSync } from "fs";
+import { getConfig } from "./config/index";
 
 export let giannaProcess!: ChildProcessWithoutNullStreams;
 
 export const giannaPath = type() == "Windows_NT" ? "gianna.exe" : "gianna";
+
+export async function deleteGianna() {
+  await unlinkAsync(giannaPath);
+}
 
 interface IGithubAsset {
   browser_download_url: string;
@@ -17,7 +22,7 @@ interface IGithubAsset {
 
 export async function giannaVersion() {
   try {
-    const res = await Axios.get(`http://localhost:8001/`);
+    const res = await Axios.get(`http://localhost:${getConfig().GIANNA_PORT}/`);
     return res.data.version as string;
   } catch (error) {
     return null;
@@ -26,7 +31,7 @@ export async function giannaVersion() {
 
 export async function resetGianna() {
   try {
-    await Axios.delete(`http://localhost:8001/index`);
+    await Axios.delete(`http://localhost:${getConfig().GIANNA_PORT}/index`);
   } catch (error) {
     logger.error("Error while resetting gianna");
     logger.log(error.message);
@@ -84,14 +89,17 @@ export async function ensureGiannaExists() {
 export function spawnGianna() {
   return new Promise((resolve, reject) => {
     logger.log("Spawning Gianna");
-    giannaProcess = spawn("./" + giannaPath, []);
+
+    const port = getConfig().GIANNA_PORT;
+
+    giannaProcess = spawn("./" + giannaPath, ["--port", port.toString()]);
     let responded = false;
     giannaProcess.on("error", (err) => {
       reject(err);
     });
     giannaProcess.stdout.on("data", (data) => {
       if (!responded) {
-        logger.log("Gianna ready");
+        logger.log("Gianna ready on port " + port);
         responded = true;
         resolve();
       }

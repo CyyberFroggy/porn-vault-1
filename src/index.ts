@@ -9,9 +9,9 @@ import { printMaxMemory } from "./mem";
 import { validateFFMPEGPaths } from "./config/validate";
 const sha = require("js-sha512").sha512;
 import args from "./args";
-import { ensureIzzyExists } from "./izzy";
+import { ensureIzzyExists, deleteIzzy } from "./izzy";
 import { queueLoop } from "./queue_loop";
-import { ensureGiannaExists } from "./gianna";
+import { ensureGiannaExists, deleteGianna } from "./gianna";
 import { applyExitHooks } from "./exit";
 
 export async function onConfigLoad(config: IConfig) {
@@ -66,6 +66,14 @@ if (!process.env.PREVENT_STARTUP)
             ])
           ).password;
         } while (sha(password) != config.PASSWORD);
+      }
+
+      if (args["update-gianna"]) {
+        await deleteGianna();
+      }
+
+      if (args["update-izzy"]) {
+        await deleteIzzy();
       }
 
       try {

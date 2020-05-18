@@ -10,6 +10,11 @@ class StudioModule extends VuexModule {
   items = [] as any[];
 
   @Mutation
+  unshift(items: any[]) {
+    this.items.unshift(...items);
+  }
+
+  @Mutation
   resetPagination() {
     this.items = [];
     this.numPages = 0;

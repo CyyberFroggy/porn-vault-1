@@ -13,6 +13,11 @@ class MovieModule extends VuexModule {
   items = [] as IMovie[];
 
   @Mutation
+  unshift(items: IMovie[]) {
+    this.items.unshift(...items);
+  }
+
+  @Mutation
   resetPagination() {
     this.items = [];
     this.numPages = 0;

@@ -10,6 +10,11 @@ class ActorModule extends VuexModule {
   items = [] as IActor[];
 
   @Mutation
+  unshift(items: IActor[]) {
+    this.items.unshift(...items);
+  }
+
+  @Mutation
   resetPagination() {
     this.items = [];
     this.numPages = 0;

@@ -87,6 +87,9 @@
           <span class="display-1 font-weight-bold mr-2">{{ fetchLoader ? "-" : numResults }}</span>
           <span class="title font-weight-regular">actors found</span>
         </div>
+        <v-btn @click="openCreateDialog" icon>
+          <v-icon>mdi-plus</v-icon>
+        </v-btn>
         <v-btn :loading="fetchingRandom" @click="getRandom" icon>
           <v-icon>mdi-shuffle-variant</v-icon>
         </v-btn>
@@ -430,7 +433,7 @@ export default class ActorList extends mixins(DrawerMixin) {
         }
       })
         .then(res => {
-          this.actors.unshift(res.data.addActor);
+          actorModule.unshift([res.data.addActor]);
           resolve();
         })
         .catch(err => {
@@ -466,7 +469,7 @@ export default class ActorList extends mixins(DrawerMixin) {
       }
     })
       .then(res => {
-        this.actors.unshift(res.data.addActor);
+        actorModule.unshift([res.data.addActor]);
         this.createActorDialog = false;
         this.createActorName = "";
         this.createActorAliases = [];
