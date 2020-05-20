@@ -99,10 +99,10 @@
         <v-tooltip bottom>
           <template v-slot:activator="{ on }">
             <v-btn v-on="on" :loading="fetchingRandom" @click="getRandom" icon>
-              <v-icon>Get random studio</v-icon>
+              <v-icon>mdi-shuffle-variant</v-icon>
             </v-btn>
           </template>
-          <span>Reshuffle</span>
+          <span>Get random studio</span>
         </v-tooltip>
         <v-tooltip bottom>
           <template v-slot:activator="{ on }">
