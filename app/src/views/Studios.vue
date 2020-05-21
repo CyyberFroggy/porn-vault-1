@@ -87,13 +87,24 @@
           <span class="display-1 font-weight-bold mr-2">{{ fetchLoader ? "-" : numResults }}</span>
           <span class="title font-weight-regular">studios found</span>
         </div>
-        <v-btn @click="bulkImportDialog = true" icon>
-          <v-icon>mdi-plus</v-icon>
-        </v-btn>
-        <v-btn :loading="fetchingRandom" @click="getRandom" icon>
-          <v-icon>mdi-shuffle-variant</v-icon>
-        </v-btn>
-        <v-tooltip right>
+
+        <v-tooltip bottom>
+          <template v-slot:activator="{ on }">
+            <v-btn v-on="on" @click="bulkImportDialog = true" icon>
+              <v-icon>mdi-plus</v-icon>
+            </v-btn>
+          </template>
+          <span>Add studio</span>
+        </v-tooltip>
+        <v-tooltip bottom>
+          <template v-slot:activator="{ on }">
+            <v-btn v-on="on" :loading="fetchingRandom" @click="getRandom" icon>
+              <v-icon>mdi-shuffle-variant</v-icon>
+            </v-btn>
+          </template>
+          <span>Get random studio</span>
+        </v-tooltip>
+        <v-tooltip bottom>
           <template v-slot:activator="{ on }">
             <v-btn v-on="on" :disabled="sortBy != '$shuffle'" @click="rerollSeed" icon>
               <v-icon>mdi-dice-3-outline</v-icon>
@@ -192,9 +203,7 @@ export default class StudioList extends mixins(DrawerMixin) {
     return seed;
   }
 
-  get studios() {
-    return studioModule.items;
-  }
+  studios = [] as any[];
 
   fetchLoader = false;
   fetchError = false;
@@ -215,6 +224,7 @@ export default class StudioList extends mixins(DrawerMixin) {
       for (const name of this.studiosBulkImport) {
         await this.createStudioWithName(name);
       }
+      this.refreshPage();
       this.bulkImportDialog = false;
     } catch (error) {
       console.error(error);
@@ -348,8 +358,6 @@ export default class StudioList extends mixins(DrawerMixin) {
           name
         }
       });
-
-      studioModule.unshift([res.data.addStudio]);
     } catch (error) {
       console.error(error);
     }
@@ -487,10 +495,10 @@ export default class StudioList extends mixins(DrawerMixin) {
       .then(result => {
         this.fetchError = false;
         studioModule.setPagination({
-          items: result.items,
           numResults: result.numItems,
           numPages: result.numPages
         });
+        this.studios = result.items;
       })
       .catch(err => {
         console.error(err);
@@ -501,8 +509,12 @@ export default class StudioList extends mixins(DrawerMixin) {
       });
   }
 
+  refreshPage() {
+    this.loadPage(studioModule.page);
+  }
+
   mounted() {
-    if (!this.studios.length) this.loadPage(1);
+    if (!this.studios.length) this.refreshPage();
   }
 
   beforeMount() {

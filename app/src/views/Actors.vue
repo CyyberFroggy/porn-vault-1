@@ -74,6 +74,8 @@
           placeholder="Sort direction"
           :items="sortDirItems"
         ></v-select>
+
+        <!-- <CustomFieldFilter :fields="fields" /> -->
       </v-container>
     </v-navigation-drawer>
 
@@ -87,13 +89,31 @@
           <span class="display-1 font-weight-bold mr-2">{{ fetchLoader ? "-" : numResults }}</span>
           <span class="title font-weight-regular">actors found</span>
         </div>
-        <v-btn @click="openCreateDialog" icon>
-          <v-icon>mdi-plus</v-icon>
-        </v-btn>
-        <v-btn :loading="fetchingRandom" @click="getRandom" icon>
-          <v-icon>mdi-shuffle-variant</v-icon>
-        </v-btn>
-        <v-tooltip right>
+        <v-tooltip bottom>
+          <template v-slot:activator="{ on }">
+            <v-btn v-on="on" @click="openCreateDialog" icon>
+              <v-icon>mdi-plus</v-icon>
+            </v-btn>
+          </template>
+          <span>Add actor</span>
+        </v-tooltip>
+        <v-tooltip bottom>
+          <template v-slot:activator="{ on }">
+            <v-btn v-on="on" @click="bulkImportDialog = true" icon>
+              <v-icon>mdi-file-import</v-icon>
+            </v-btn>
+          </template>
+          <span>Bulk add actors</span>
+        </v-tooltip>
+        <v-tooltip bottom>
+          <template v-slot:activator="{ on }">
+            <v-btn v-on="on" :loading="fetchingRandom" @click="getRandom" icon>
+              <v-icon>mdi-shuffle-variant</v-icon>
+            </v-btn>
+          </template>
+          <span>Get random actor</span>
+        </v-tooltip>
+        <v-tooltip bottom>
           <template v-slot:activator="{ on }">
             <v-btn v-on="on" :disabled="sortBy != '$shuffle'" @click="rerollSeed" icon>
               <v-icon>mdi-dice-3-outline</v-icon>
@@ -245,12 +265,14 @@ import ILabel from "../types/label";
 import DrawerMixin from "../mixins/drawer";
 import { mixins } from "vue-class-component";
 import { actorModule } from "../store/actor";
+import CustomFieldFilter from "../components/CustomFieldFilter.vue";
 
 @Component({
   components: {
     ActorCard,
     LabelSelector,
-    InfiniteLoading
+    InfiniteLoading,
+    CustomFieldFilter
   }
 })
 export default class ActorList extends mixins(DrawerMixin) {
@@ -265,10 +287,9 @@ export default class ActorList extends mixins(DrawerMixin) {
     return seed;
   }
 
-  get actors() {
-    return actorModule.items;
-  }
+  actors = [] as IActor[];
 
+  fields = [] as any[];
   fetchLoader = false;
   fetchError = false;
   fetchingRandom = false;
@@ -288,6 +309,7 @@ export default class ActorList extends mixins(DrawerMixin) {
       for (const name of this.actorsBulkImport) {
         await this.createActorWithName(name);
       }
+      this.refreshPage();
       this.bulkImportDialog = false;
     } catch (error) {
       console.error(error);
@@ -433,7 +455,6 @@ export default class ActorList extends mixins(DrawerMixin) {
         }
       })
         .then(res => {
-          actorModule.unshift([res.data.addActor]);
           resolve();
         })
         .catch(err => {
@@ -469,7 +490,7 @@ export default class ActorList extends mixins(DrawerMixin) {
       }
     })
       .then(res => {
-        actorModule.unshift([res.data.addActor]);
+        this.refreshPage();
         this.createActorDialog = false;
         this.createActorName = "";
         this.createActorAliases = [];
@@ -661,6 +682,10 @@ export default class ActorList extends mixins(DrawerMixin) {
     }
   }
 
+  refreshPage() {
+    this.loadPage(actorModule.page);
+  }
+
   loadPage(page: number) {
     this.fetchLoader = true;
 
@@ -668,10 +693,10 @@ export default class ActorList extends mixins(DrawerMixin) {
       .then(result => {
         this.fetchError = false;
         actorModule.setPagination({
-          items: result.items,
           numResults: result.numItems,
           numPages: result.numPages
         });
+        this.actors = result.items;
       })
       .catch(err => {
         console.error(err);
@@ -683,7 +708,7 @@ export default class ActorList extends mixins(DrawerMixin) {
   }
 
   mounted() {
-    if (!this.actors.length) this.loadPage(1);
+    if (!this.actors.length) this.refreshPage();
   }
 
   beforeMount() {
@@ -695,10 +720,19 @@ export default class ActorList extends mixins(DrawerMixin) {
             name
             aliases
           }
+          getCustomFields {
+            _id
+            name
+            type
+            values
+            unit
+            target
+          }
         }
       `
     })
       .then(res => {
+        this.fields = res.data.getCustomFields;
         this.allLabels = res.data.getLabels;
         if (!this.allLabels.length) {
           this.selectedLabels.include = [];

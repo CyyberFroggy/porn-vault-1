@@ -113,10 +113,15 @@
           <span class="display-1 font-weight-bold mr-2">{{ fetchLoader ? "-" : numResults }}</span>
           <span class="title font-weight-regular">scenes found</span>
         </div>
-        <v-btn :loading="fetchingRandom" @click="getRandom" icon>
-          <v-icon>mdi-shuffle-variant</v-icon>
-        </v-btn>
-        <v-tooltip right>
+        <v-tooltip bottom>
+          <template v-slot:activator="{ on }">
+            <v-btn v-on="on" :loading="fetchingRandom" @click="getRandom" icon>
+              <v-icon>mdi-shuffle-variant</v-icon>
+            </v-btn>
+          </template>
+          <span>Get random scene</span>
+        </v-tooltip>
+        <v-tooltip bottom>
           <template v-slot:activator="{ on }">
             <v-btn v-on="on" :disabled="sortBy != '$shuffle'" @click="rerollSeed" icon>
               <v-icon>mdi-dice-3-outline</v-icon>
@@ -236,9 +241,9 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog :persistent="isUploadingScene" v-model="uploadDialog" max-width="400px">
+    <!-- <v-dialog :persistent="isUploadingScene" v-model="uploadDialog" max-width="400px">
       <SceneUploader @update-state="isUploadingScene = $event" @uploaded="scenes.unshift($event)" />
-    </v-dialog>
+    </v-dialog>-->
 
     <v-dialog v-model="deleteSelectedScenesDialog" max-width="400px">
       <v-card>
@@ -288,9 +293,7 @@ export default class SceneList extends mixins(DrawerMixin) {
     return contextModule.showSidenav;
   }
 
-  get scenes() {
-    return sceneModule.items;
-  }
+  scenes = [] as IScene[];
 
   rerollSeed() {
     const seed = Math.random().toString(36);
@@ -473,7 +476,9 @@ export default class SceneList extends mixins(DrawerMixin) {
       }
     })
       .then(res => {
-        sceneModule.removeScenes(this.selectedScenes);
+        for (const id of this.selectedScenes) {
+          this.scenes = this.scenes.filter(scene => scene._id != id);
+        }
         this.selectedScenes = [];
         this.deleteSelectedScenesDialog = false;
       })
@@ -546,7 +551,7 @@ export default class SceneList extends mixins(DrawerMixin) {
       }
     })
       .then(res => {
-        this.scenes.unshift(res.data.addScene);
+        this.refreshPage();
         this.createSceneDialog = false;
         this.createSceneName = "";
         this.createSceneActors = [];
@@ -754,10 +759,10 @@ export default class SceneList extends mixins(DrawerMixin) {
       .then(result => {
         this.fetchError = false;
         sceneModule.setPagination({
-          items: result.items,
           numResults: result.numItems,
           numPages: result.numPages
         });
+        this.scenes = result.items;
       })
       .catch(err => {
         console.error(err);
@@ -768,8 +773,12 @@ export default class SceneList extends mixins(DrawerMixin) {
       });
   }
 
+  refreshPage() {
+    this.loadPage(sceneModule.page);
+  }
+
   mounted() {
-    if (!this.scenes.length) this.loadPage(1);
+    if (!this.scenes.length) this.refreshPage();
   }
 
   beforeMount() {

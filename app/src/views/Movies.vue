@@ -87,16 +87,31 @@
           <span class="display-1 font-weight-bold mr-2">{{ fetchLoader ? "-" : numResults }}</span>
           <span class="title font-weight-regular">movies found</span>
         </div>
-        <v-btn @click="openCreateDialog" icon>
-          <v-icon>mdi-plus</v-icon>
-        </v-btn>
-        <v-btn @click="bulkImportDialog = true" icon>
-          <v-icon>mdi-file-import</v-icon>
-        </v-btn>
-        <v-btn :loading="fetchingRandom" @click="getRandom" icon>
-          <v-icon>mdi-shuffle-variant</v-icon>
-        </v-btn>
-        <v-tooltip right>
+        <v-tooltip bottom>
+          <template v-slot:activator="{ on }">
+            <v-btn v-on="on" @click="openCreateDialog" icon>
+              <v-icon>mdi-plus</v-icon>
+            </v-btn>
+          </template>
+          <span>Add movie</span>
+        </v-tooltip>
+        <v-tooltip bottom>
+          <template v-slot:activator="{ on }">
+            <v-btn v-on="on" @click="bulkImportDialog = true" icon>
+              <v-icon>mdi-file-import</v-icon>
+            </v-btn>
+          </template>
+          <span>Bulk add movies</span>
+        </v-tooltip>
+        <v-tooltip bottom>
+          <template v-slot:activator="{ on }">
+            <v-btn v-on="on" :loading="fetchingRandom" @click="getRandom" icon>
+              <v-icon>mdi-shuffle-variant</v-icon>
+            </v-btn>
+          </template>
+          <span>Get random movie</span>
+        </v-tooltip>
+        <v-tooltip bottom>
           <template v-slot:activator="{ on }">
             <v-btn v-on="on" :disabled="sortBy != '$shuffle'" @click="rerollSeed" icon>
               <v-icon>mdi-dice-3-outline</v-icon>
@@ -234,9 +249,7 @@ export default class MovieList extends mixins(DrawerMixin) {
     return seed;
   }
 
-  get movies() {
-    return movieModule.items;
-  }
+  movies = [] as IMovie[];
 
   fetchLoader = false;
   fetchError = false;
@@ -257,6 +270,7 @@ export default class MovieList extends mixins(DrawerMixin) {
       for (const name of this.moviesBulkImport) {
         await this.createMovieWithName(name);
       }
+      this.refreshPage();
       this.bulkImportDialog = false;
     } catch (error) {
       console.error(error);
@@ -398,7 +412,6 @@ export default class MovieList extends mixins(DrawerMixin) {
         }
       })
         .then(res => {
-          movieModule.unshift([res.data.addMovie]);
           resolve(res.data.addMovie);
         })
         .catch(err => {
@@ -431,7 +444,7 @@ export default class MovieList extends mixins(DrawerMixin) {
       }
     })
       .then(res => {
-        movieModule.unshift([res.data.addMovie]);
+        this.refreshPage();
         this.createMovieDialog = false;
         this.createMovieName = "";
         this.createMovieScenes = [];
@@ -579,10 +592,10 @@ export default class MovieList extends mixins(DrawerMixin) {
       .then(result => {
         this.fetchError = false;
         movieModule.setPagination({
-          items: result.items,
           numResults: result.numItems,
           numPages: result.numPages
         });
+        this.movies = result.items;
       })
       .catch(err => {
         console.error(err);
@@ -593,8 +606,12 @@ export default class MovieList extends mixins(DrawerMixin) {
       });
   }
 
+  refreshPage() {
+    this.loadPage(movieModule.page);
+  }
+
   mounted() {
-    if (!this.movies.length) this.loadPage(1);
+    if (!this.movies.length) this.refreshPage();
   }
 
   beforeMount() {

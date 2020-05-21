@@ -102,10 +102,15 @@
           <span class="display-1 font-weight-bold mr-2">{{ fetchLoader ? "-" : numResults }}</span>
           <span class="title font-weight-regular">images found</span>
         </div>
-        <v-btn @click="openUploadDialog" icon>
-          <v-icon>mdi-upload</v-icon>
-        </v-btn>
-        <v-tooltip right>
+        <v-tooltip bottom>
+          <template v-slot:activator="{ on }">
+            <v-btn v-on="on" @click="openUploadDialog" icon>
+              <v-icon>mdi-upload</v-icon>
+            </v-btn>
+          </template>
+          <span>Upload image</span>
+        </v-tooltip>
+        <v-tooltip bottom>
           <template v-slot:activator="{ on }">
             <v-btn v-on="on" :disabled="sortBy != '$shuffle'" @click="rerollSeed" icon>
               <v-icon>mdi-dice-3-outline</v-icon>
@@ -216,7 +221,7 @@ import { imageModule } from "../store/image";
 })
 export default class ImageList extends mixins(DrawerMixin) {
   addNewItem(image: IImage) {
-    imageModule.unshift([image]);
+    this.images.unshift(image);
   }
 
   get showSidenav() {
@@ -230,9 +235,7 @@ export default class ImageList extends mixins(DrawerMixin) {
     return seed;
   }
 
-  get images() {
-    return imageModule.items;
-  }
+  images = [] as IImage[];
 
   fetchLoader = false;
   fetchError = false;
@@ -349,7 +352,9 @@ export default class ImageList extends mixins(DrawerMixin) {
       }
     })
       .then(res => {
-        imageModule.removeImages(this.selectedImages);
+        for (const id of this.selectedImages) {
+          this.images = this.images.filter(img => img._id != id);
+        }
         this.selectedImages = [];
         this.deleteSelectedImagesDialog = false;
       })
@@ -541,10 +546,10 @@ export default class ImageList extends mixins(DrawerMixin) {
       .then(result => {
         this.fetchError = false;
         imageModule.setPagination({
-          items: result.items,
           numResults: result.numItems,
           numPages: result.numPages
         });
+        this.images = result.items;
       })
       .catch(err => {
         console.error(err);
@@ -555,8 +560,12 @@ export default class ImageList extends mixins(DrawerMixin) {
       });
   }
 
+  refreshPage() {
+    this.loadPage(imageModule.page);
+  }
+
   mounted() {
-    if (!this.images.length) this.loadPage(1);
+    if (!this.images.length) this.refreshPage();
   }
 
   beforeMount() {

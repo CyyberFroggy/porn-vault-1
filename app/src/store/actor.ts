@@ -7,16 +7,16 @@ class ActorModule extends VuexModule {
   page = 1;
   numResults = 0;
   numPages = 0;
-  items = [] as IActor[];
+  // items = [] as IActor[];
 
-  @Mutation
+  /* @Mutation
   unshift(items: IActor[]) {
     this.items.unshift(...items);
-  }
+  } */
 
   @Mutation
   resetPagination() {
-    this.items = [];
+    // this.items = [];
     this.numPages = 0;
     this.numResults = 0;
     this.page = 1;
@@ -36,15 +36,15 @@ class ActorModule extends VuexModule {
 
   @Mutation
   setPagination({
-    items,
+    // items,
     numResults,
     numPages,
   }: {
-    items: IActor[];
+    // items: IActor[];
     numResults: number;
     numPages: number;
   }) {
-    this.items = items;
+    // this.items = items;
     this.numResults = numResults;
     this.numPages = numPages;
   }
