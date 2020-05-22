@@ -17,7 +17,7 @@ enum ConfigFileFormat {
 function stringifyFormatted(obj: any, format: ConfigFileFormat) {
   switch (format) {
     case ConfigFileFormat.JSON:
-      return JSON.stringify(obj, null, 1);
+      return JSON.stringify(obj, null, 2);
     case ConfigFileFormat.YAML:
       return YAML.stringify(obj);
     default:
@@ -149,7 +149,7 @@ export const defaultConfig: IConfig = {
 };
 
 let loadedConfig;
-let loadedConfigFormat: ConfigFileFormat = ConfigFileFormat.JSON;
+let loadedConfigFormat: ConfigFileFormat | null = null;
 export let configFile;
 
 const configFilename =
@@ -167,7 +167,7 @@ const configYAMLFilename = path.resolve(
 export async function checkConfig() {
   const hasReadFile = await loadConfig();
 
-  if (hasReadFile) {
+  if (hasReadFile && loadedConfigFormat) {
     let defaultOverride = false;
     for (const key in defaultConfig) {
       if (loadedConfig[key] === undefined) {
