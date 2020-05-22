@@ -1,7 +1,8 @@
 import "mocha";
+import "../../src/index";
 
 import { assert } from "chai";
-import { existsSync, unlinkSync, writeFileSync } from "fs";
+import { existsSync, unlinkSync, writeFileSync, readFileSync } from "fs";
 import path from "path";
 import sinon from "sinon";
 import YAML from "yaml";
@@ -13,6 +14,7 @@ import {
   watchConfig,
 } from "../../src/config";
 import { getConfig } from "../../src/config";
+import { preserve } from "./index.fixture";
 
 const configJSONFilename = path.resolve(process.cwd(), "config.test.json");
 const configYAMLFilename = path.resolve(process.cwd(), "config.test.yaml");
@@ -232,4 +234,62 @@ describe("config", () => {
     // that the test is still running
     await stopWatching();
   });
+
+  for (const targetFile of [configJSONFilename, configYAMLFilename]) {
+    it(`adds missing key, preserves ${targetFile} format`, async () => {
+      let formatter;
+      if (targetFile.includes(".json")) {
+        formatter = preserve.json;
+      } else if (targetFile.includes(".yaml")) {
+        formatter = preserve.yaml;
+      } else {
+        throw new Error("could not get formatter for test");
+      }
+
+      assert.isFalse(!!getConfig());
+      assert.isFalse(existsSync(configJSONFilename));
+      assert.isFalse(existsSync(configYAMLFilename));
+
+      const MISSING_KEY = "SCAN_INTERVAL";
+
+      // This test assumes that the missing key will be added with the
+      // value from 'defaultConfig'
+      const initialConfig = {
+        ...defaultConfig,
+      };
+
+      const incompleteConfig = { ...initialConfig };
+      delete incompleteConfig[MISSING_KEY];
+      assert.doesNotHaveAnyKeys(incompleteConfig, [MISSING_KEY]);
+
+      writeFileSync(targetFile, formatter.stringify(incompleteConfig), {
+        encoding: "utf-8",
+      });
+      assert.isTrue(existsSync(targetFile));
+
+      let fileContents = readFileSync(targetFile, "utf-8");
+      let parsedFileContents;
+      assert.doesNotThrow(() => {
+        parsedFileContents = formatter.parse(fileContents);
+      });
+
+      // Before the real test, ensure an initial state of the
+      // actual file contents
+      assert.doesNotHaveAnyKeys(fileContents, [MISSING_KEY]);
+      assert.notDeepEqual(initialConfig, parsedFileContents);
+
+      await checkConfig();
+
+      fileContents = readFileSync(targetFile, "utf-8");
+
+      assert.doesNotThrow(() => {
+        // If parse does not throw, we can assume
+        // the contents still the same format
+        parsedFileContents = formatter.parse(fileContents);
+      });
+
+      assert.containsAllKeys(parsedFileContents, [MISSING_KEY]);
+      assert.deepEqual(initialConfig, parsedFileContents);
+    });
+  }
 });
