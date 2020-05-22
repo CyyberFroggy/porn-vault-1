@@ -1,6 +1,12 @@
 import { gql } from "apollo-server-express";
 
 export default gql`
+  type Nationality {
+    name: String!
+    alpha2: String!
+    nationality: String!
+  }
+
   type Actor {
     _id: String!
     name: String!
@@ -26,6 +32,7 @@ export default gql`
     hero: Image
     movies: [Movie!]!
     collabs: [Actor!]!
+    nationality: Nationality
   }
 
   type ActorGraph {
@@ -33,11 +40,17 @@ export default gql`
     links: Object!
   }
 
+  type ActorSearchResults {
+    numItems: Int!
+    numPages: Int!
+    items: [Actor!]!
+  }
+
   extend type Query {
     numActors: Int!
-    getActors(query: String): [Actor!]!
+    getActors(query: String, seed: String): ActorSearchResults!
     getActorById(id: String!): Actor
-    topActors(num: Int): [Actor!]!
+    topActors(skip: Int, take: Int): [Actor!]!
     getActorsWithoutScenes(num: Int): [Actor!]!
     getActorsWithoutLabels(num: Int): [Actor!]!
     actorGraph: ActorGraph!
@@ -58,6 +71,7 @@ export default gql`
     bookmark: Long
     bornOn: Long
     customFields: Object
+    nationality: String
   }
 
   extend type Mutation {

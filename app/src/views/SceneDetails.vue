@@ -67,7 +67,7 @@
             </div>
             <div
               class="med--text pa-2"
-            >{{ new Date(currentScene.releaseDate).toLocaleDateString() }}</div>
+            >{{ new Date(currentScene.releaseDate).toDateString(undefined, { timeZone: "UTC" }) }}</div>
           </div>
 
           <div v-if="currentScene.description">
@@ -989,13 +989,15 @@ export default class SceneDetails extends Vue {
         query: gql`
           query($query: String, $auto: Boolean) {
             getImages(query: $query, auto: $auto) {
-              ...ImageFragment
-              actors {
-                ...ActorFragment
-              }
-              scene {
-                _id
-                name
+              items {
+                ...ImageFragment
+                actors {
+                  ...ActorFragment
+                }
+                scene {
+                  _id
+                  name
+                }
               }
             }
           }
@@ -1008,7 +1010,7 @@ export default class SceneDetails extends Vue {
         }
       });
 
-      return result.data.getImages;
+      return result.data.getImages.items;
     } catch (err) {
       throw err;
     }

@@ -1,20 +1,17 @@
+import chokidar from "chokidar";
+import inquirer from "inquirer";
+import path from "path";
+import YAML from "yaml";
+
+import { onConfigLoad } from "..";
+import { existsAsync, readFileAsync, writeFileAsync } from "../fs/async";
 import * as logger from "../logger";
 import setupFunction from "../setup";
-import { exists, writeFile, readFile } from "fs";
-import { promisify } from "util";
 import { Dictionary } from "../types/utility";
-import YAML from "yaml";
-import inquirer from "inquirer";
-import chokidar from "chokidar";
-import { onConfigLoad } from "../index";
-
-const existsAsync = promisify(exists);
-const readFileAsync = promisify(readFile);
-const writeFileAsync = promisify(writeFile);
 
 enum ConfigFileFormat {
   JSON = "JSON",
-  YAML = "YAML"
+  YAML = "YAML",
 }
 
 function stringifyFormatted(obj: any, format: ConfigFileFormat) {
@@ -57,6 +54,8 @@ export interface IConfig {
   PASSWORD: string | null;
 
   PORT: number;
+  IZZY_PORT: number;
+  GIANNA_PORT: number;
   ENABLE_HTTPS: boolean;
   HTTPS_KEY: string;
   HTTPS_CERT: string;
@@ -111,6 +110,8 @@ export const defaultConfig: IConfig = {
   SCREENSHOT_INTERVAL: 120,
   PASSWORD: null,
   PORT: 3000,
+  IZZY_PORT: 8000,
+  GIANNA_PORT: 8001,
   ENABLE_HTTPS: false,
   HTTPS_KEY: "",
   HTTPS_CERT: "",
@@ -151,6 +152,18 @@ let loadedConfig;
 let loadedConfigFormat: ConfigFileFormat = ConfigFileFormat.JSON;
 export let configFile;
 
+const configFilename =
+  process.env.NODE_ENV === "test" ? "config.test" : "config";
+
+const configJSONFilename = path.resolve(
+  process.cwd(),
+  `${configFilename}.json`
+);
+const configYAMLFilename = path.resolve(
+  process.cwd(),
+  `${configFilename}.yaml`
+);
+
 export async function checkConfig() {
   const hasReadFile = await loadConfig();
 
@@ -173,55 +186,65 @@ export async function checkConfig() {
     return;
   }
 
-  const { yaml } = await inquirer.prompt([
-    {
-      type: "confirm",
-      name: "yaml",
-      message: "Use YAML (instead of JSON) for config file?",
-      default: false,
-    },
-  ]);
+  const yaml =
+    process.env.NODE_ENV === "test"
+      ? false
+      : (
+          await inquirer.prompt([
+            {
+              type: "confirm",
+              name: "yaml",
+              message: "Use YAML (instead of JSON) for config file?",
+              default: false,
+            },
+          ])
+        ).yaml;
 
   loadedConfig = await setupFunction();
 
   if (yaml) {
-    await writeFileAsync("config.yaml", stringifyFormatted(loadedConfig, ConfigFileFormat.YAML), "utf-8");
-    logger.warn("Created config.yaml. Please edit and restart.");
+    await writeFileAsync(
+      configYAMLFilename,
+      stringifyFormatted(loadedConfig, ConfigFileFormat.YAML),
+      "utf-8"
+    );
+    logger.warn(`Created ${configYAMLFilename}. Please edit and restart.`);
   } else {
     await writeFileAsync(
-      "config.json",
+      configJSONFilename,
       stringifyFormatted(loadedConfig, ConfigFileFormat.JSON),
       "utf-8"
     );
-    logger.warn("Created config.json. Please edit and restart.");
+    logger.warn(`Created ${configJSONFilename}. Please edit and restart.`);
   }
 
   return process.exit(0);
 }
 
 export async function loadConfig() {
-  if (await existsAsync("config.json")) {
-    logger.message("Loading config.json...");
-    try {
-      loadedConfig = JSON.parse(await readFileAsync("config.json", "utf-8"));
+  try {
+    if (await existsAsync(configJSONFilename)) {
+      logger.message(`Loading ${configJSONFilename}...`);
+      loadedConfig = JSON.parse(
+        await readFileAsync(configJSONFilename, "utf-8")
+      );
+      configFile = configJSONFilename;
       loadedConfigFormat = ConfigFileFormat.JSON;
-    } catch (error) {
-      logger.error(error.message);
-      process.exit(1);
-    }
-    configFile = "config.json";
-    return true;
-  } else if (await existsAsync("config.yaml")) {
-    logger.message("Loading config.yaml...");
-    try {
-      loadedConfig = YAML.parse(await readFileAsync("config.yaml", "utf-8"));
+      return true;
+    } else if (await existsAsync(configYAMLFilename)) {
+      logger.message(`Loading ${configYAMLFilename}...`);
+      loadedConfig = YAML.parse(
+        await readFileAsync(configYAMLFilename, "utf-8")
+      );
+      configFile = configYAMLFilename;
       loadedConfigFormat = ConfigFileFormat.YAML;
-    } catch (error) {
-      logger.error(error.message);
-      process.exit(1);
+      return true;
+    } else {
+      logger.warn("Did not find any config file");
     }
-    configFile = "config.yaml";
-    return true;
+  } catch (error) {
+    logger.error(error.message);
+    process.exit(1);
   }
 
   return false;
@@ -231,28 +254,30 @@ export function getConfig() {
   return loadedConfig as IConfig;
 }
 
+/**
+ * @returns a function that will stop watching the config file
+ */
 export function watchConfig() {
-  chokidar.watch(configFile).on("change", async () => {
+  const watcher = chokidar.watch(configFile).on("change", async () => {
     logger.message(`${configFile} changed, reloading...`);
 
     let newConfig = null as IConfig | null;
 
-    if (configFile.endsWith(".json")) {
-      try {
-        newConfig = JSON.parse(await readFileAsync("config.json", "utf-8"));
+    try {
+      if (configFile.endsWith(".json")) {
+        newConfig = JSON.parse(
+          await readFileAsync(configJSONFilename, "utf-8")
+        );
         loadedConfigFormat = ConfigFileFormat.JSON;
-      } catch (error) {
-        logger.error(error.message);
-        logger.error("ERROR when loading new config, please fix it.");
-      }
-    } else if (configFile.endsWith(".yaml")) {
-      try {
-        newConfig = YAML.parse(await readFileAsync("config.yaml", "utf-8"));
+      } else if (configFile.endsWith(".yaml")) {
+        newConfig = YAML.parse(
+          await readFileAsync(configYAMLFilename, "utf-8")
+        );
         loadedConfigFormat = ConfigFileFormat.YAML;
-      } catch (error) {
-        logger.error(error.message);
-        logger.error("ERROR when loading new config, please fix it.");
       }
+    } catch (error) {
+      logger.error(error.message);
+      logger.error("ERROR when loading new config, please fix it.");
     }
 
     if (newConfig) {
@@ -262,4 +287,10 @@ export function watchConfig() {
       logger.warn("Couldn't load config, try again");
     }
   });
+
+  return async () => watcher.close();
+}
+
+export function resetLoadedConfig() {
+  loadedConfig = null;
 }

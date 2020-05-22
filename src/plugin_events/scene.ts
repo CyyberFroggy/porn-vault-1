@@ -12,25 +12,25 @@ import { getConfig } from "../config";
 import { extname } from "path";
 import { downloadFile } from "../ffmpeg-download";
 import Image from "../types/image";
-import * as database from "../database/index";
 import * as logger from "../logger";
 import Studio from "../types/studio";
 import Label from "../types/label";
 import Actor from "../types/actor";
 import { onActorCreate } from "./actor";
-import { indices } from "../search/index";
-import { createActorSearchDoc } from "../search/actor";
+import { indexActors } from "../search/actor";
 import { indexImages } from "../search/image";
 import {
   imageCollection,
   actorCollection,
   movieCollection,
   viewCollection,
+  labelCollection,
+  studioCollection,
 } from "../database/index";
 import Movie from "../types/movie";
 import { onMovieCreate } from "./movie";
-import { createMovieSearchDoc } from "../search/movie";
-import { createStudioSearchDoc } from "../search/studio";
+import { indexMovies } from "../search/movie";
+import { indexStudios } from "../search/studio";
 import SceneView from "../types/watch";
 
 // This function has side effects
@@ -142,7 +142,7 @@ export async function onSceneCreate(
           logger.error(error.message);
         }
         await actorCollection.upsert(actor._id, actor);
-        indices.actors.add(await createActorSearchDoc(actor));
+        await indexActors([actor]);
         logger.log("Created actor " + actor.name);
       }
     }
@@ -160,7 +160,7 @@ export async function onSceneCreate(
       } else if (config.CREATE_MISSING_LABELS) {
         const label = new Label(labelName);
         labelIds.push(label._id);
-        await database.insert(database.store.labels, label);
+        await labelCollection.upsert(label._id, label);
         logger.log("Created label " + label.name);
       }
     }
@@ -178,8 +178,8 @@ export async function onSceneCreate(
     else if (config.CREATE_MISSING_STUDIOS) {
       const studio = new Studio(pluginResult.studio);
       scene.studio = studio._id;
-      await database.insert(database.store.studios, studio);
-      indices.studios.add(await createStudioSearchDoc(studio));
+      await studioCollection.upsert(studio._id, studio);
+      await indexStudios([studio]);
       logger.log("Created studio " + studio.name);
     }
   }
@@ -191,7 +191,7 @@ export async function onSceneCreate(
       const movie = <Movie>await Movie.getById(movieId);
       const sceneIds = (await Movie.getScenes(movie)).map((sc) => sc._id);
       await Movie.setScenes(movie, sceneIds.concat(scene._id));
-      indices.movies.update(movie._id, await createMovieSearchDoc(movie));
+      await indexMovies([movie]);
     } else if (config.CREATE_MISSING_MOVIES) {
       let movie = new Movie(pluginResult.movie);
 
@@ -206,7 +206,7 @@ export async function onSceneCreate(
       logger.log("Created movie " + movie.name);
       await Movie.setScenes(movie, [scene._id]);
       logger.log(`Attached ${scene.name} to movie ${movie.name}`);
-      indices.movies.add(await createMovieSearchDoc(movie));
+      await indexMovies([movie]);
     }
   }
 

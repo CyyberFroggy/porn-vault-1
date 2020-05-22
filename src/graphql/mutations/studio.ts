@@ -5,10 +5,10 @@ import Movie from "../../types/movie";
 import Image from "../../types/image";
 import { stripStr } from "../../extractor";
 import * as logger from "../../logger";
-import { indices } from "../../search/index";
-import { createStudioSearchDoc } from "../../search/studio";
-import { updateSceneDoc } from "../../search/scene";
+import { indexStudios, index as studioIndex } from "../../search/studio";
 import LabelledItem from "../../types/labelled_item";
+import { studioCollection } from "../../database";
+import { updateScenes } from "../../search/scene";
 
 type IStudioUpdateOpts = Partial<{
   name: string;
@@ -31,13 +31,13 @@ export default {
       if (scene.studio === null && perms.includes(stripStr(studio.name))) {
         scene.studio = studio._id;
         await database.sceneCollection.upsert(scene._id, scene);
-        await updateSceneDoc(scene);
+        await updateScenes([scene]);
         logger.log(`Updated scene ${scene._id}`);
       }
     }
 
-    await database.insert(database.store.studios, studio);
-    indices.studios.add(await createStudioSearchDoc(studio));
+    await studioCollection.upsert(studio._id, studio);
+    await indexStudios([studio]);
     return studio;
   },
 
@@ -72,14 +72,11 @@ export default {
         if (Array.isArray(opts.labels))
           await Studio.setLabels(studio, opts.labels);
 
-        await database.update(
-          database.store.studios,
-          { _id: studio._id },
-          studio
-        );
+        await studioCollection.upsert(studio._id, studio);
         updatedStudios.push(studio);
-        indices.studios.update(studio._id, await createStudioSearchDoc(studio));
       }
+
+      await indexStudios(updatedStudios);
     }
 
     return updatedStudios;
@@ -90,8 +87,8 @@ export default {
       const studio = await Studio.getById(id);
 
       if (studio) {
-        await Studio.remove(studio);
-        indices.studios.remove(studio._id);
+        await studioCollection.remove(studio._id);
+        await studioIndex.remove([studio._id]);
         await Studio.filterStudio(studio._id);
         await Scene.filterStudio(studio._id);
         await Movie.filterStudio(studio._id);

@@ -20,8 +20,8 @@ enum LogType {
   HTTP = "http",
   MESSAGE = "message",
   SEARCH = "search",
-  TWIGS = "twigs",
   IZZY = "izzy",
+  GIANNA = "gianna",
 }
 
 interface ILogData {
@@ -44,8 +44,13 @@ function createItem(type: LogType, text: string) {
 }
 
 function appendToLog(item: ILogData) {
-  const config = getConfig();
-  if (config && logArray.length == config.MAX_LOG_SIZE) logArray.shift();
+  // For some reason, when directly testing config/index.ts (example: in config/index.spec.ts)
+  // this file cannot resolve config/index.ts and the imported module will be undefined
+  // causing undefined.getConfig() to throw an error
+  if (process.env.NODE_ENV !== "test") {
+    const config = getConfig();
+    if (config && logArray.length == config.MAX_LOG_SIZE) logArray.shift();
+  }
   logArray.push(item);
 }
 
@@ -97,20 +102,15 @@ export const message = (...args: any) => {
   debug("vault:message")(text);
   appendToLog(createItem(LogType.MESSAGE, text));
 };
-export const search = (...args: any) => {
-  const text = merge(...args);
-  debug("vault:twigs")(text);
-  appendToLog(createItem(LogType.SEARCH, text));
-};
-export const twigs = (...args: any) => {
-  const text = merge(...args);
-  debug("vault:twigs")(text);
-  appendToLog(createItem(LogType.TWIGS, text));
-};
 export const izzy = (...args: any) => {
   const text = merge(...args);
   debug("vault:izzy")(text);
   appendToLog(createItem(LogType.IZZY, text));
+};
+export const gianna = (...args: any) => {
+  const text = merge(...args);
+  debug("vault:gianna")(text);
+  appendToLog(createItem(LogType.GIANNA, text));
 };
 
 export const httpLog = (

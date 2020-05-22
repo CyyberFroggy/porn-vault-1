@@ -56,7 +56,9 @@
               <v-icon>mdi-calendar</v-icon>
               <v-subheader>Release Date</v-subheader>
             </div>
-            <div class="med--text pa-2">{{ new Date(currentMovie.releaseDate).toDateString() }}</div>
+            <div
+              class="med--text pa-2"
+            >{{ new Date(currentMovie.releaseDate).toDateString(undefined, { timeZone: "UTC" }) }}</div>
           </div>
 
           <div v-if="currentMovie.description">
@@ -585,13 +587,15 @@ export default class MovieDetails extends Vue {
         query: gql`
           query($query: String) {
             getImages(query: $query) {
-              ...ImageFragment
-              actors {
-                ...ActorFragment
-              }
-              scene {
-                _id
-                name
+              items {
+                ...ImageFragment
+                actors {
+                  ...ActorFragment
+                }
+                scene {
+                  _id
+                  name
+                }
               }
             }
           }
@@ -603,7 +607,7 @@ export default class MovieDetails extends Vue {
         }
       });
 
-      return result.data.getImages;
+      return result.data.getImages.items;
     } catch (err) {
       throw err;
     }

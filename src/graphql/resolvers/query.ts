@@ -5,20 +5,20 @@ import Movie from "../../types/movie";
 import { mapAsync, filterAsync } from "../../types/utility";
 import Studio from "../../types/studio";
 import Image from "../../types/image";
-import * as database from "../../database/index";
 import CustomField from "../../types/custom_field";
 import { getImages } from "./search/image";
 import { getScenes } from "./search/scene";
 import { getActors } from "./search/actor";
 import { getStudios } from "./search/studio";
 import { getMovies } from "./search/movie";
-import { twigsVersion } from "../../search/index";
 import { getLength, isProcessing } from "../../queue/processing";
 import {
   sceneCollection,
   imageCollection,
   actorCollection,
   movieCollection,
+  labelCollection,
+  studioCollection,
 } from "../../database/index";
 import SceneView from "../../types/watch";
 import LabelledItem from "../../types/labelled_item";
@@ -33,15 +33,8 @@ export default {
     );
   },
 
-  async twigs() {
-    return {
-      version: await twigsVersion(),
-    };
-  },
-
   async getScenesWithoutStudios(_, { num }: { num: number }) {
-    const numStudios = await database.count(database.store.studios, {});
-
+    const numStudios = await studioCollection.count();
     if (numStudios == 0) return [];
 
     return (await Scene.getAll())
@@ -97,8 +90,8 @@ export default {
       .slice(0, num || 12);
   },
 
-  async topActors(_, { num }: { num: number }) {
-    return (await Actor.getTopActors()).slice(0, num || 12);
+  async topActors(_, { skip, take }: { skip: number; take: number }) {
+    return await Actor.getTopActors(skip, take);
   },
 
   async getQueueInfo() {
@@ -109,9 +102,7 @@ export default {
   },
 
   getStudios,
-
   getMovies,
-
   getActors,
   getScenes,
   getImages,
@@ -140,8 +131,7 @@ export default {
     return await Label.getById(id);
   },
   async getCustomFields() {
-    const fields = await CustomField.getAll();
-    return fields.sort((a, b) => a.name.localeCompare(b.name));
+    return await CustomField.getAll();
   },
   async getLabels(_, { type }: { type?: string | null }) {
     let labels = await Label.getAll();
@@ -165,10 +155,10 @@ export default {
     return movieCollection.count();
   },
   async numLabels() {
-    return await database.count(database.store.labels, {});
+    return labelCollection.count();
   },
   async numStudios() {
-    return await database.count(database.store.studios, {});
+    return studioCollection.count();
   },
   async numImages() {
     return await imageCollection.count();
