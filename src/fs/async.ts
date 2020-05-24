@@ -52,6 +52,7 @@ export async function walk(options: IWalkOptions) {
     } catch (err) {
       logger.error(`Error reading contents of directory "${top}", skipping`);
       logger.error(err);
+      continue;
     }
 
     for (const file of filesInDir) {
