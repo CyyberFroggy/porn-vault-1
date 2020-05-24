@@ -16,7 +16,7 @@ export async function createTempTestingDir() {
 }
 
 export async function unlinkTempTestingDir() {
-  if (existsAsync(TEST_TEMP_DIR)) {
+  if (await existsAsync(TEST_TEMP_DIR)) {
     await rimrafAsync(TEST_TEMP_DIR);
   }
 }
