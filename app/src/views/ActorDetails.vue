@@ -15,7 +15,11 @@
               <v-col class="pb-0" cols="6" sm="12">
                 <div
                   v-if="avatar"
-                  :class="($vuetify.breakpoint.xsOnly || !heroImage) ? '' : 'avatar-margin-top'"
+                  :class="
+                    $vuetify.breakpoint.xsOnly || !heroImage
+                      ? ''
+                      : 'avatar-margin-top'
+                  "
                   class="text-center"
                 >
                   <v-avatar
@@ -28,7 +32,11 @@
                   </v-avatar>
                 </div>
                 <v-hover
-                  :class="($vuetify.breakpoint.xsOnly || !heroImage) ? '' : 'elevation-8 thumb-margin-top'"
+                  :class="
+                    $vuetify.breakpoint.xsOnly || !heroImage
+                      ? ''
+                      : 'elevation-8 thumb-margin-top'
+                  "
                   v-else
                 >
                   <template v-slot:default="{ hover }">
@@ -67,7 +75,11 @@
                     v-ripple
                     @click="openLabelSelector"
                     small
-                    :class="`hover mr-1 mb-1 ${$vuetify.theme.dark ? 'black--text' : 'white--text'}`"
+                    :class="
+                      `hover mr-1 mb-1 ${
+                        $vuetify.theme.dark ? 'black--text' : 'white--text'
+                      }`
+                    "
                   >+ Add</v-chip>
                 </div>
               </v-col>
@@ -83,10 +95,14 @@
                     v-if="currentActor.aliases.length"
                     class="py-1 med--text body-2"
                   >a.k.a. {{ currentActor.aliases.join(", ") }}</div>
-                  <div
-                    v-if="currentActor.bornOn"
-                    class="py-1"
-                  >Born on {{ new Date(currentActor.bornOn).toDateString(undefined, { timeZone: "UTC" }) }}</div>
+                  <div v-if="currentActor.bornOn" class="py-1">
+                    Born on
+                    {{
+                    new Date(currentActor.bornOn).toDateString(undefined, {
+                    timeZone: "UTC"
+                    })
+                    }}
+                  </div>
 
                   <v-tooltip bottom class="py-1">
                     <template v-slot:activator="{ on }">
@@ -97,9 +113,14 @@
                         <span class="med-text">views</span>
                       </div>
                     </template>
-                    <span
-                      v-if="currentActor.watches.length"
-                    >Last watched: {{ new Date(currentActor.watches[currentActor.watches.length - 1]).toLocaleString() }}</span>
+                    <span v-if="currentActor.watches.length">
+                      Last watched:
+                      {{
+                      new Date(
+                      currentActor.watches[currentActor.watches.length - 1]
+                      ).toLocaleString()
+                      }}
+                    </span>
                     <span v-else>You haven't watched {{ currentActor.name }} yet!</span>
                   </v-tooltip>
                   <v-divider class="mt-2"></v-divider>
@@ -108,7 +129,7 @@
                       color="primary"
                       text
                       class="text-none"
-                      @click="imageDialog=true"
+                      @click="imageDialog = true"
                     >Manage images</v-btn>
                   </div>
 
@@ -254,37 +275,41 @@
                         width="100%"
                         height="100%"
                         :image="image"
+                        :contain="true"
                       >
                         <template v-slot:action>
-                          <v-tooltip top>
+                          <v-menu offset-y>
                             <template v-slot:activator="{ on }">
                               <v-btn
-                                light
-                                v-on="on"
-                                @click.native.stop="setAsThumbnail(image._id)"
-                                class="elevation-2 mb-2"
+                                style="background: #000000aa"
+                                @click.native.stop
                                 icon
-                                style="background: #fafafa;"
+                                v-on="on"
                               >
-                                <v-icon>mdi-image</v-icon>
+                                <v-icon class="white--text">mdi-menu</v-icon>
                               </v-btn>
                             </template>
-                            <span>Set as actor thumbnail</span>
-                          </v-tooltip>
+                            <v-list>
+                              <v-list-item v-ripple @click="setAsThumbnail(image._id)">
+                                <v-list-item-title>Set as thumbnail</v-list-item-title>
+                              </v-list-item>
+                              <v-list-item v-ripple @click="setAsAltThumbnail(image._id)">
+                                <v-list-item-title>Set as alt. thumbnail</v-list-item-title>
+                              </v-list-item>
+                              <v-list-item v-ripple @click="setAsAvatar(image._id)">
+                                <v-list-item-title>Set as avatar</v-list-item-title>
+                              </v-list-item>
+                              <v-list-item v-ripple @click="setAsHero(image._id)">
+                                <v-list-item-title>Set as hero</v-list-item-title>
+                              </v-list-item>
+                              <v-divider></v-divider>
+                              <v-list-item v-ripple @click="lightboxIndex = index">Show details</v-list-item>
+                            </v-list>
+                          </v-menu>
                         </template>
                       </ImageCard>
                     </v-col>
                   </v-row>
-
-                  <transition name="fade">
-                    <Lightbox
-                      @delete="removeImage"
-                      @update="updateImage"
-                      :items="images"
-                      :index="lightboxIndex"
-                      @index="lightboxIndex = $event"
-                    />
-                  </transition>
                 </v-container>
               </div>
 
@@ -311,6 +336,15 @@
             </div>
           </v-col>
         </v-row>
+        <transition name="fade">
+          <Lightbox
+            @delete="removeImage"
+            @update="updateImage"
+            :items="images"
+            :index="lightboxIndex"
+            @index="lightboxIndex = $event"
+          />
+        </transition>
       </v-container>
     </div>
     <div v-else class="mt-3 text-center">
@@ -521,7 +555,7 @@
                 color="primary"
                 text
                 class="mt-1 text-none"
-                @click="thumbnailDialog=true"
+                @click="thumbnailDialog = true"
               >Change thumbnail</v-btn>
             </v-col>
 
@@ -550,7 +584,7 @@
                 color="primary"
                 text
                 class="mt-1 text-none"
-                @click="altThumbnailDialog=true"
+                @click="altThumbnailDialog = true"
               >Change alt. thumbnail</v-btn>
             </v-col>
 
@@ -574,7 +608,7 @@
                 color="primary"
                 text
                 class="mt-1 text-none"
-                @click="avatarDialog=true"
+                @click="avatarDialog = true"
               >Change avatar</v-btn>
             </v-col>
 
@@ -598,7 +632,7 @@
                 color="primary"
                 text
                 class="mt-1 text-none"
-                @click="heroDialog=true"
+                @click="heroDialog = true"
               >Change hero image</v-btn>
             </v-col>
           </v-row>
@@ -1229,8 +1263,19 @@ export default class ActorDetails extends Vue {
             getImages(query: $query, auto: $auto) {
               items {
                 ...ImageFragment
+                labels {
+                  _id
+                  name
+                }
+                studio {
+                  _id
+                  name
+                }
                 actors {
                   ...ActorFragment
+                  avatar {
+                    _id
+                  }
                 }
                 scene {
                   _id
