@@ -1,11 +1,11 @@
 import os from "os";
 import { promisify } from "util";
 import { chmod } from "fs";
-
-import { walk, writeFileAsync, existsAsync } from "../src/fs/async";
-import tests from "./walk.fixture";
 import { expect } from "chai";
 import { isAbsolute, resolve } from "path";
+
+import { walk, writeFileAsync, existsAsync } from "../src/fs/async";
+import tests from "./fixtures/walk.fixture";
 
 import {
   createTempTestingDir,
