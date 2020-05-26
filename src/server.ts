@@ -40,7 +40,8 @@ import Actor from "./types/actor";
 import LRU from "lru-cache";
 
 const cache = new LRU({
-  maxAge: 3600,
+  max: 500,
+  maxAge: 3600 * 1000,
 });
 
 let serverReady = false;
@@ -89,21 +90,31 @@ export default async () => {
 
   app.get("/label-usage/scenes", async (req, res) => {
     const cached = cache.get("scene-label-usage");
+    console.log(cached);
     if (cached) {
+      logger.log("Using cached scene label usage");
       return res.json(cached);
     }
     const scores = await Scene.getLabelUsage();
-    if (scores.length) cache.set("scene-label-usage", scores);
+    if (scores.length) {
+      logger.log("Caching scene label usage");
+      cache.set("scene-label-usage", scores);
+    }
     res.json(scores);
   });
 
   app.get("/label-usage/actors", async (req, res) => {
     const cached = cache.get("actor-label-usage");
+    console.log(cached);
     if (cached) {
+      logger.log("Using cached actor label usage");
       return res.json(cached);
     }
     const scores = await Actor.getLabelUsage();
-    if (scores.length) cache.set("actor-label-usage", scores);
+    if (scores.length) {
+      logger.log("Caching actor label usage");
+      cache.set("actor-label-usage", scores);
+    }
     res.json(scores);
   });
 
