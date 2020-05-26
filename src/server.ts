@@ -36,6 +36,12 @@ import { readFileSync } from "fs";
 import boxen from "boxen";
 import { index as sceneIndex } from "./search/scene";
 import { index as imageIndex } from "./search/image";
+import Actor from "./types/actor";
+import LRU from "lru-cache";
+
+const cache = new LRU({
+  maxAge: 3600,
+});
 
 let serverReady = false;
 let setupMessage = "Setting up...";
@@ -80,6 +86,26 @@ export default async () => {
   app.use(cors);
 
   app.use(httpLog);
+
+  app.get("/label-usage/scenes", async (req, res) => {
+    const cached = cache.get("scene-label-usage");
+    if (cached) {
+      return res.json(cached);
+    }
+    const scores = await Scene.getLabelUsage();
+    if (scores.length) cache.set("scene-label-usage", scores);
+    res.json(scores);
+  });
+
+  app.get("/label-usage/actors", async (req, res) => {
+    const cached = cache.get("actor-label-usage");
+    if (cached) {
+      return res.json(cached);
+    }
+    const scores = await Actor.getLabelUsage();
+    if (scores.length) cache.set("actor-label-usage", scores);
+    res.json(scores);
+  });
 
   app.get("/search/timings/scenes", async (req, res) => {
     res.json(await sceneIndex.times());
