@@ -280,6 +280,7 @@ export default async () => {
     logger.error(error);
     logger.error("Error while loading database: " + error.message);
     logger.warn("Try restarting, if the error persists, your database may be corrupted");
+    process.exit(1);
   }
 
   setupMessage = "Loading search engine...";
