@@ -279,6 +279,7 @@ export default async () => {
     logger.warn(
       "Try restarting, if the error persists, your database may be corrupted"
     );
+    process.exit(1);
   }
 
   setupMessage = "Loading search engine...";
@@ -302,6 +303,7 @@ export default async () => {
   console.log(
     boxen(`PORN VAULT READY\nOpen ${protocol}://localhost:${port}/`, {
       padding: 1,
+      margin: 1,
     })
   );
 
