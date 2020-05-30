@@ -90,7 +90,6 @@ export default async () => {
 
   app.get("/label-usage/scenes", async (req, res) => {
     const cached = cache.get("scene-label-usage");
-    console.log(cached);
     if (cached) {
       logger.log("Using cached scene label usage");
       return res.json(cached);
@@ -105,7 +104,6 @@ export default async () => {
 
   app.get("/label-usage/actors", async (req, res) => {
     const cached = cache.get("actor-label-usage");
-    console.log(cached);
     if (cached) {
       logger.log("Using cached actor label usage");
       return res.json(cached);
@@ -272,14 +270,15 @@ export default async () => {
   } else {
     await spawnIzzy();
   }
-  
+
   try {
     await loadStores();
-  }
-  catch(error) {
+  } catch (error) {
     logger.error(error);
     logger.error("Error while loading database: " + error.message);
-    logger.warn("Try restarting, if the error persists, your database may be corrupted");
+    logger.warn(
+      "Try restarting, if the error persists, your database may be corrupted"
+    );
   }
 
   setupMessage = "Loading search engine...";
