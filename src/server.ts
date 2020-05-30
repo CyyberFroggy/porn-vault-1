@@ -304,6 +304,7 @@ export default async () => {
   console.log(
     boxen(`PORN VAULT READY\nOpen ${protocol}://localhost:${port}/`, {
       padding: 1,
+      margin: 1,
     })
   );
 
