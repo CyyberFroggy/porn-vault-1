@@ -272,7 +272,15 @@ export default async () => {
   } else {
     await spawnIzzy();
   }
-  await loadStores();
+  
+  try {
+    await loadStores();
+  }
+  catch(error) {
+    logger.error(error);
+    logger.error("Error while loading database: " + error.message);
+    logger.warn("Try restarting, if the error persists, your database may be corrupted");
+  }
 
   setupMessage = "Loading search engine...";
   if (await giannaVersion()) {
