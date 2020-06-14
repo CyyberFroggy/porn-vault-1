@@ -327,5 +327,14 @@ export default async () => {
     logger.error(err.message);
   });
 
-  if (config.SCAN_INTERVAL > 0) setInterval(scanFolders, config.SCAN_INTERVAL);
+  if (config.SCAN_INTERVAL > 0) {
+    function printNextScanDate() {
+      const nextScanDate = new Date(Date.now() + config.SCAN_INTERVAL);
+      logger.message(`Next scan at ${nextScanDate.toLocaleString()}`);
+    }
+    printNextScanDate();
+    setInterval(() => {
+      scanFolders().then(printNextScanDate);
+    }, config.SCAN_INTERVAL);
+  }
 };
