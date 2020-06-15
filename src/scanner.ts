@@ -24,6 +24,10 @@ export function startScanInterval(ms: number) {
   }
   printNextScanDate();
   setInterval(() => {
-    scanFolders().then(printNextScanDate);
+    scanFolders()
+      .then(printNextScanDate)
+      .catch((err) => {
+        logger.error("Scan failed " + err.message);
+      });
   }, ms);
 }

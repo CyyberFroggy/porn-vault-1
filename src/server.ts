@@ -31,7 +31,7 @@ import { index as sceneIndex } from "./search/scene";
 import { index as imageIndex } from "./search/image";
 import Actor from "./types/actor";
 import LRU from "lru-cache";
-import { scanFolders, startScanInterval } from "./scanner";
+import { scanFolders, startScanInterval, nextScanTimestamp } from "./scanner";
 import { tryStartProcessing } from "./queue/processing";
 
 const cache = new LRU({
@@ -221,6 +221,14 @@ export default async (): Promise<void> => {
   app.get("/force-scan", (req, res) => {
     scanFolders();
     res.json("Started scan.");
+  });
+
+  app.get("/next-scan", (req, res) => {
+    if (!nextScanTimestamp) return res.send("No scan planned");
+    res.json({
+      nextScanDate: new Date(nextScanTimestamp).toLocaleString(),
+      nextScanTimestamp,
+    });
   });
 
   if (config.BACKUP_ON_STARTUP === true) {
