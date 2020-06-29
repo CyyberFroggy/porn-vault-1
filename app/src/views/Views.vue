@@ -145,7 +145,7 @@ export default class About extends Vue {
           label: "Views this month",
           data: this.views.map((view, index) => ({
             t: new Date(view.date),
-            y: index
+            y: index + 1
           })),
           backgroundColor: "#79ffa0"
         }
