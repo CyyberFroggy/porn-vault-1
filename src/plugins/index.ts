@@ -97,9 +97,15 @@ export async function runPlugin(
 
     try {
       const result = await func({
+        $pluginName: pluginName,
         $pluginPath: path,
         $cwd: process.cwd(),
         $library: libraryPath(""),
+        $require: (partial: string) => {
+          if (typeof partial != "string")
+            throw new TypeError("$require: String required");
+          return requireUncached(nodepath.resolve(path, partial));
+        },
         /* $modules: {
           ...
           fs: fs,
@@ -109,11 +115,6 @@ export async function runPlugin(
           moment: moment
         }, */
         // TODO: deprecate at some point, replace with ^
-        $require: (partial: string) => {
-          if (typeof partial != "string")
-            throw new TypeError("$require: String required");
-          return requireUncached(nodepath.resolve(path, partial));
-        },
         $os: os,
         $readline: readline,
         $inquirer: inquirer,
