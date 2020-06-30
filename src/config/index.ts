@@ -9,8 +9,20 @@ import * as logger from "../logger";
 import setupFunction from "../setup";
 import { Dictionary } from "../types/utility";
 
-function stringifyFormatted(obj: any) {
-  return JSON.stringify(obj, null, 1);
+enum ConfigFileFormat {
+  JSON = "JSON",
+  YAML = "YAML",
+}
+
+function stringifyFormatted(obj: any, format: ConfigFileFormat) {
+  switch (format) {
+    case ConfigFileFormat.JSON:
+      return JSON.stringify(obj, null, 2);
+    case ConfigFileFormat.YAML:
+      return YAML.stringify(obj);
+    default:
+      return "";
+  }
 }
 
 interface IPlugin {
@@ -137,6 +149,7 @@ export const defaultConfig: IConfig = {
 };
 
 let loadedConfig;
+let loadedConfigFormat: ConfigFileFormat | null = null;
 export let configFile;
 
 const configFilename =
@@ -154,7 +167,7 @@ const configYAMLFilename = path.resolve(
 export async function checkConfig() {
   const hasReadFile = await loadConfig();
 
-  if (hasReadFile) {
+  if (hasReadFile && loadedConfigFormat) {
     let defaultOverride = false;
     for (const key in defaultConfig) {
       if (loadedConfig[key] === undefined) {
@@ -166,7 +179,7 @@ export async function checkConfig() {
     if (defaultOverride) {
       await writeFileAsync(
         configFile,
-        stringifyFormatted(loadedConfig),
+        stringifyFormatted(loadedConfig, loadedConfigFormat),
         "utf-8"
       );
     }
@@ -192,14 +205,14 @@ export async function checkConfig() {
   if (yaml) {
     await writeFileAsync(
       configYAMLFilename,
-      YAML.stringify(loadedConfig),
+      stringifyFormatted(loadedConfig, ConfigFileFormat.YAML),
       "utf-8"
     );
     logger.warn(`Created ${configYAMLFilename}. Please edit and restart.`);
   } else {
     await writeFileAsync(
       configJSONFilename,
-      stringifyFormatted(loadedConfig),
+      stringifyFormatted(loadedConfig, ConfigFileFormat.JSON),
       "utf-8"
     );
     logger.warn(`Created ${configJSONFilename}. Please edit and restart.`);
@@ -216,6 +229,7 @@ export async function loadConfig() {
         await readFileAsync(configJSONFilename, "utf-8")
       );
       configFile = configJSONFilename;
+      loadedConfigFormat = ConfigFileFormat.JSON;
       return true;
     } else if (await existsAsync(configYAMLFilename)) {
       logger.message(`Loading ${configYAMLFilename}...`);
@@ -223,6 +237,7 @@ export async function loadConfig() {
         await readFileAsync(configYAMLFilename, "utf-8")
       );
       configFile = configYAMLFilename;
+      loadedConfigFormat = ConfigFileFormat.YAML;
       return true;
     } else {
       logger.warn("Did not find any config file");
@@ -253,10 +268,12 @@ export function watchConfig() {
         newConfig = JSON.parse(
           await readFileAsync(configJSONFilename, "utf-8")
         );
+        loadedConfigFormat = ConfigFileFormat.JSON;
       } else if (configFile.endsWith(".yaml")) {
         newConfig = YAML.parse(
           await readFileAsync(configYAMLFilename, "utf-8")
         );
+        loadedConfigFormat = ConfigFileFormat.YAML;
       }
     } catch (error) {
       logger.error(error.message);
