@@ -29,7 +29,8 @@ export default {
     { min, max }: { min: number | null; max: number | null }
   ) {
     return (await SceneView.getAll()).filter(
-      (w) => w.date >= (min || 0) && w.date <= (max || 99999999999999)
+      (w) =>
+        w.date >= (min || -99999999999999) && w.date <= (max || 99999999999999)
     );
   },
 
@@ -196,45 +197,5 @@ export default {
       actors,
       links: { items: links },
     };
-  },
-  async getSceneLabelUsage() {
-    const scores = {} as Record<string, { label: Label; score: number }>;
-    for (const scene of await Scene.getAll()) {
-      for (const label of await Scene.getLabels(scene)) {
-        const item = scores[label._id];
-        scores[label._id] = item
-          ? { label, score: item.score + 1 }
-          : {
-              label,
-              score: 0,
-            };
-      }
-    }
-    return Object.keys(scores)
-      .map((key) => ({
-        label: scores[key].label,
-        score: scores[key].score,
-      }))
-      .sort((a, b) => b.score - a.score);
-  },
-  async getActorLabelUsage() {
-    const scores = {} as Record<string, { label: Label; score: number }>;
-    for (const actor of await Actor.getAll()) {
-      for (const label of await Actor.getLabels(actor)) {
-        const item = scores[label._id];
-        scores[label._id] = item
-          ? { label, score: item.score + 1 }
-          : {
-              label,
-              score: 0,
-            };
-      }
-    }
-    return Object.keys(scores)
-      .map((key) => ({
-        label: scores[key].label,
-        score: scores[key].score,
-      }))
-      .sort((a, b) => b.score - a.score);
   },
 };

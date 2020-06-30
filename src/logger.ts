@@ -6,7 +6,7 @@ import { writeFileAsync } from "./fs/async";
 
 if (process.env.NODE_ENV == "development") {
   debug.enable("vault:*");
-} else {
+} else if (!process.env.DEBUG) {
   debug.enable(
     "vault:success,vault:warn,vault:error,vault:message,vault:plugin"
   );
@@ -44,8 +44,13 @@ function createItem(type: LogType, text: string) {
 }
 
 function appendToLog(item: ILogData) {
-  const config = getConfig();
-  if (config && logArray.length == config.MAX_LOG_SIZE) logArray.shift();
+  // For some reason, when directly testing config/index.ts (example: in config/index.spec.ts)
+  // this file cannot resolve config/index.ts and the imported module will be undefined
+  // causing undefined.getConfig() to throw an error
+  if (process.env.NODE_ENV !== "test") {
+    const config = getConfig();
+    if (config && logArray.length == config.MAX_LOG_SIZE) logArray.shift();
+  }
   logArray.push(item);
 }
 
@@ -112,8 +117,7 @@ export const httpLog = (
   req: express.Request,
   res: express.Response,
   next: express.NextFunction
-) => {
-  const baseUrl = url.parse(req.url).pathname;
-  http(`${req.method} ${baseUrl}: ${new Date().toLocaleString()}`);
+): void => {
+  http(`${req.method} ${req.path}: ${new Date().toLocaleString()}`);
   next();
 };
