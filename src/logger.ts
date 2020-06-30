@@ -112,8 +112,7 @@ export const httpLog = (
   req: express.Request,
   res: express.Response,
   next: express.NextFunction
-) => {
-  const baseUrl = url.parse(req.url).pathname;
-  http(`${req.method} ${baseUrl}: ${new Date().toLocaleString()}`);
+): void => {
+  http(`${req.method} ${req.path}: ${new Date().toLocaleString()}`);
   next();
 };

@@ -94,7 +94,7 @@
                   <div
                     v-if="currentActor.aliases.length"
                     class="py-1 med--text body-2"
-                  >a.k.a. {{ currentActor.aliases.join(", ") }}</div>
+                  >a.k.a. {{ currentActor.aliases.filter(s => !s.startsWith("regex:")).join(", ") }}</div>
                   <div v-if="currentActor.bornOn" class="py-1">
                     Born on
                     {{

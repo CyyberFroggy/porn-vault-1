@@ -147,7 +147,9 @@ export default class About extends Vue {
             t: new Date(view.date),
             y: index + 1
           })),
-          backgroundColor: "#79ffa0"
+          pointBackgroundColor: "#90aaff",
+          fill: true,
+          backgroundColor: "#90aaff22"
         }
       ]
     };
@@ -175,7 +177,7 @@ export default class About extends Vue {
           legend: {
             display: false
           },
-          showLines: false,
+          //showLines: false,
           responsive: true,
           scales: {
             xAxes: [
@@ -201,10 +203,3 @@ export default class About extends Vue {
   }
 }
 </script>
-
-<style scoped>
-.output {
-  background: #090909;
-  border-radius: 4px;
-}
-</style>
