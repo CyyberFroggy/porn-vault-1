@@ -6,7 +6,7 @@ import { writeFileAsync } from "./fs/async";
 
 if (process.env.NODE_ENV == "development") {
   debug.enable("vault:*");
-} else {
+} else if (!process.env.DEBUG) {
   debug.enable(
     "vault:success,vault:warn,vault:error,vault:message,vault:plugin"
   );
@@ -117,8 +117,7 @@ export const httpLog = (
   req: express.Request,
   res: express.Response,
   next: express.NextFunction
-) => {
-  const baseUrl = url.parse(req.url).pathname;
-  http(`${req.method} ${baseUrl}: ${new Date().toLocaleString()}`);
+): void => {
+  http(`${req.method} ${req.path}: ${new Date().toLocaleString()}`);
   next();
 };

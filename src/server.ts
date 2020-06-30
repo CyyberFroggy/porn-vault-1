@@ -5,7 +5,6 @@ import Scene from "./types/scene";
 import * as path from "path";
 import { checkPassword, passwordHandler } from "./password";
 import { getConfig, watchConfig } from "./config/index";
-import { checkVideoFolders, checkImageFolders } from "./queue/check";
 import {
   loadStores,
   actorCollection,
@@ -20,54 +19,30 @@ import { buildIndices } from "./search";
 import { checkImportFolders } from "./import/index";
 import cors from "./middlewares/cors";
 import { httpLog } from "./logger";
+import queueRouter from "./queue_router";
 import { renderHandlebars } from "./render";
 import { dvdRenderer } from "./dvd_renderer";
-import {
-  getLength,
-  isProcessing,
-  setProcessingStatus,
-} from "./queue/processing";
-import queueRouter from "./queue_router";
-import { spawn } from "child_process";
 import { spawnIzzy, izzyVersion, resetIzzy } from "./izzy";
 import { spawnGianna, giannaVersion, resetGianna } from "./gianna";
 import https from "https";
 import { readFileSync } from "fs";
+import boxen from "boxen";
+import { index as sceneIndex } from "./search/scene";
+import { index as imageIndex } from "./search/image";
+import Actor from "./types/actor";
+import LRU from "lru-cache";
+import { scanFolders, startScanInterval, nextScanTimestamp } from "./scanner";
+import { tryStartProcessing } from "./queue/processing";
+
+const cache = new LRU({
+  max: 500,
+  maxAge: 3600 * 1000,
+});
 
 let serverReady = false;
 let setupMessage = "Setting up...";
 
-async function tryStartProcessing() {
-  const queueLen = await getLength();
-  if (queueLen > 0 && !isProcessing()) {
-    logger.message("Starting processing worker...");
-    setProcessingStatus(true);
-    spawn(process.argv[0], process.argv.slice(1).concat(["--process-queue"]), {
-      cwd: process.cwd(),
-      detached: false,
-      stdio: "inherit",
-    }).on("exit", (code) => {
-      logger.warn("Processing process exited with code " + code);
-      setProcessingStatus(false);
-    });
-  } else if (!queueLen) {
-    logger.success("No more videos to process.");
-  }
-}
-
-async function scanFolders() {
-  logger.message("Scanning folders...");
-  await checkVideoFolders();
-  logger.success("Scan done.");
-  checkImageFolders();
-
-  tryStartProcessing().catch((err) => {
-    logger.error("Couldn't start processing...");
-    logger.error(err.message);
-  });
-}
-
-export default async () => {
+export default async (): Promise<void> => {
   logger.message(
     "Check https://github.com/boi123212321/porn-vault for discussion & updates"
   );
@@ -77,6 +52,41 @@ export default async () => {
   app.use(cors);
 
   app.use(httpLog);
+
+  app.get("/label-usage/scenes", async (req, res) => {
+    const cached = cache.get("scene-label-usage");
+    if (cached) {
+      logger.log("Using cached scene label usage");
+      return res.json(cached);
+    }
+    const scores = await Scene.getLabelUsage();
+    if (scores.length) {
+      logger.log("Caching scene label usage");
+      cache.set("scene-label-usage", scores);
+    }
+    res.json(scores);
+  });
+
+  app.get("/label-usage/actors", async (req, res) => {
+    const cached = cache.get("actor-label-usage");
+    if (cached) {
+      logger.log("Using cached actor label usage");
+      return res.json(cached);
+    }
+    const scores = await Actor.getLabelUsage();
+    if (scores.length) {
+      logger.log("Caching actor label usage");
+      cache.set("actor-label-usage", scores);
+    }
+    res.json(scores);
+  });
+
+  app.get("/search/timings/scenes", async (req, res) => {
+    res.json(await sceneIndex.times());
+  });
+  app.get("/search/timings/images", async (req, res) => {
+    res.json(await imageIndex.times());
+  });
 
   app.get("/debug/timings/scenes", async (req, res) => {
     res.json(await sceneCollection.times());
@@ -132,11 +142,11 @@ export default async () => {
         app
       )
       .listen(port, () => {
-        console.log(`Server running on Port ${port}`);
+        logger.message(`HTTPS Server running on Port ${port}`);
       });
   } else {
     app.listen(port, () => {
-      console.log(`Server running on Port ${port}`);
+      logger.message(`Server running on Port ${port}`);
     });
   }
 
@@ -213,6 +223,14 @@ export default async () => {
     res.json("Started scan.");
   });
 
+  app.get("/next-scan", (req, res) => {
+    if (!nextScanTimestamp) return res.send("No scan planned");
+    res.json({
+      nextScanDate: new Date(nextScanTimestamp).toLocaleString(),
+      nextScanTimestamp,
+    });
+  });
+
   if (config.BACKUP_ON_STARTUP === true) {
     setupMessage = "Creating backup...";
     await createBackup(config.MAX_BACKUP_AMOUNT || 10);
@@ -225,7 +243,17 @@ export default async () => {
   } else {
     await spawnIzzy();
   }
-  await loadStores();
+
+  try {
+    await loadStores();
+  } catch (error) {
+    logger.error(error);
+    logger.error("Error while loading database: " + error.message);
+    logger.warn(
+      "Try restarting, if the error persists, your database may be corrupted"
+    );
+    process.exit(1);
+  }
 
   setupMessage = "Loading search engine...";
   if (await giannaVersion()) {
@@ -243,7 +271,14 @@ export default async () => {
 
   serverReady = true;
 
-  // checkPreviews();
+  const protocol = config.ENABLE_HTTPS ? "https" : "http";
+
+  console.log(
+    boxen(`PORN VAULT READY\nOpen ${protocol}://localhost:${port}/`, {
+      padding: 1,
+      margin: 1,
+    })
+  );
 
   watchConfig();
 
@@ -253,14 +288,13 @@ export default async () => {
     logger.warn(
       "Scanning folders is currently disabled. Enable in config.json & restart."
     );
-  }
-
-  if (config.DO_PROCESSING) {
     tryStartProcessing().catch((err) => {
       logger.error("Couldn't start processing...");
       logger.error(err.message);
     });
   }
 
-  if (config.SCAN_INTERVAL > 0) setInterval(scanFolders, config.SCAN_INTERVAL);
+  if (config.SCAN_INTERVAL > 0) {
+    startScanInterval(config.SCAN_INTERVAL);
+  }
 };

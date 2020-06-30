@@ -53,23 +53,21 @@ if (!process.env.PREVENT_STARTUP)
     if (args["process-queue"] === true) {
       await queueLoop(config);
     } else {
-      if (
-        config.PASSWORD &&
-        process.env.NODE_ENV != "development" &&
-        process.env.NODE_ENV !== "test"
-      ) {
-        let password;
-        do {
-          password = (
-            await inquirer.prompt([
-              {
-                type: "password",
-                name: "password",
-                message: "Enter password",
-              },
-            ])
-          ).password;
-        } while (sha(password) != config.PASSWORD);
+      if (!args["no-password"]) {
+        if (config.PASSWORD && process.env.NODE_ENV !== "development" && process.env.NODE_ENV !== "test") {
+          let password;
+          do {
+            password = (
+              await inquirer.prompt([
+                {
+                  type: "password",
+                  name: "password",
+                  message: "Enter password",
+                },
+              ])
+            ).password;
+          } while (sha(password) != config.PASSWORD);
+        }
       }
 
       if (args["update-gianna"]) {

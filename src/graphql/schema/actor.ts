@@ -51,10 +51,11 @@ export default gql`
     getActors(query: String, seed: String): ActorSearchResults!
     getActorById(id: String!): Actor
     topActors(skip: Int, take: Int): [Actor!]!
+    getUnwatchedActors(skip: Int, take: Int): [Actor!]!
+
     getActorsWithoutScenes(num: Int): [Actor!]!
     getActorsWithoutLabels(num: Int): [Actor!]!
     actorGraph: ActorGraph!
-    getActorLabelUsage: [ScoredLabels!]!
   }
 
   input ActorUpdateOpts {

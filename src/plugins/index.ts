@@ -15,6 +15,7 @@ import YAML from "yaml";
 import inquirer from "inquirer";
 import readline from "readline";
 import * as os from "os";
+import boxen from "boxen";
 
 function requireUncached(module: string) {
   delete require.cache[require.resolve(module)];
@@ -96,9 +97,15 @@ export async function runPlugin(
 
     try {
       const result = await func({
+        $pluginName: pluginName,
         $pluginPath: path,
         $cwd: process.cwd(),
         $library: libraryPath(""),
+        $require: (partial: string) => {
+          if (typeof partial != "string")
+            throw new TypeError("$require: String required");
+          return requireUncached(nodepath.resolve(path, partial));
+        },
         /* $modules: {
           ...
           fs: fs,
@@ -108,11 +115,6 @@ export async function runPlugin(
           moment: moment
         }, */
         // TODO: deprecate at some point, replace with ^
-        $require: (partial: string) => {
-          if (typeof partial != "string")
-            throw new TypeError("$require: String required");
-          return requireUncached(nodepath.resolve(path, partial));
-        },
         $os: os,
         $readline: readline,
         $inquirer: inquirer,
@@ -126,6 +128,7 @@ export async function runPlugin(
         $moment: moment,
         $log: debug("vault:plugin"),
         $loader: ora,
+        $boxen: boxen,
         $throw: (str: string) => {
           throw new Error(str);
         },
