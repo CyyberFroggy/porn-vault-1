@@ -65,7 +65,7 @@ export async function logToFile() {
 function merge(...args: any[]) {
   return args
     .map((a) => {
-      const str = JSON.stringify(a);
+      const str = JSON.stringify(a, null, 2);
       if (str.startsWith('"') && str.endsWith('"')) return str.slice(1, -1);
       return str;
     })
