@@ -7,23 +7,76 @@ import { existsAsync } from "./fs/async";
 import * as logger from "./logger";
 import { chmodSync } from "fs";
 
+export const defaultPrompts = {
+  downloadFFMPEG: true,
+  usePassword: process.env.NODE_ENV !== "test",
+  useVideoFolders: process.env.NODE_ENV !== "test",
+  useImageFolders: process.env.NODE_ENV !== "test",
+};
+
 export default async () => {
-  const { downloadFFMPEG } = await inquirer.prompt([
-    {
-      type: "confirm",
-      name: "downloadFFMPEG",
-      message: "Download FFMPEG binaries?",
-      default: true
-    }
-  ]);
+  const {
+    downloadFFMPEG,
+    usePassword,
+    password,
+    useVideoFolders,
+    videoFolders,
+    useImageFolders,
+    imageFolders,
+  } = await promptSetup();
+
+  let config = JSON.parse(JSON.stringify(defaultConfig)) as IConfig;
+
+  if (downloadFFMPEG) {
+    const { ffmpegPath, ffprobePath } = await downloadFFLibs();
+
+    config.FFMPEG_PATH = path.resolve(ffmpegPath);
+    config.FFPROBE_PATH = path.resolve(ffprobePath);
+  }
+
+  if (usePassword) config.PASSWORD = sha(password);
+
+  if (useVideoFolders) config.VIDEO_PATHS = videoFolders;
+
+  if (useImageFolders) config.IMAGE_PATHS = imageFolders;
+
+  return config;
+};
+
+/**
+ * Prompts the user for how to setup the config
+ *
+ * @returns the choices
+ */
+async function promptSetup() {
+  // If testing, skip prompts, return defaults
+  if (process.env.NODE_ENV === "test") {
+    return {
+      ...defaultPrompts,
+      password: null,
+      videoFolders: [],
+      imageFolders: [],
+    };
+  }
+
+  const downloadFFMPEG = (
+    await inquirer.prompt([
+      {
+        type: "confirm",
+        name: "downloadFFMPEG",
+        message: "Download FFMPEG binaries?",
+        default: defaultPrompts.downloadFFMPEG,
+      },
+    ])
+  ).downloadFFMPEG;
 
   const { usePassword } = await inquirer.prompt([
     {
       type: "confirm",
       name: "usePassword",
       message: "Set a password (protect server in LAN)?",
-      default: true
-    }
+      default: defaultPrompts.usePassword,
+    },
   ]);
 
   let password;
@@ -34,8 +87,8 @@ export default async () => {
         {
           type: "password",
           name: "password",
-          message: "Enter a password"
-        }
+          message: "Enter a password",
+        },
       ])
     ).password;
 
@@ -47,8 +100,8 @@ export default async () => {
           {
             type: "password",
             name: "password",
-            message: "Confirm password"
-          }
+            message: "Confirm password",
+          },
         ])
       ).password;
     } while (password != confirmPassword);
@@ -60,8 +113,8 @@ export default async () => {
       name: "useVideoFolders",
       message:
         "Do you have one or more folders you want to import VIDEOS from?",
-      default: true
-    }
+      default: defaultPrompts.useVideoFolders,
+    },
   ]);
 
   const videoFolders = [] as string[];
@@ -76,8 +129,8 @@ export default async () => {
             type: "input",
             name: "path",
             message: "Enter folder name (enter 'done' when done)",
-            default: "done"
-          }
+            default: "done",
+          },
         ])
       ).path;
 
@@ -94,8 +147,8 @@ export default async () => {
       name: "useImageFolders",
       message:
         "Do you have one or more folders you want to import IMAGES from?",
-      default: true
-    }
+      default: defaultPrompts.useVideoFolders,
+    },
   ]);
 
   const imageFolders = [] as string[];
@@ -110,8 +163,8 @@ export default async () => {
             type: "input",
             name: "path",
             message: "Enter folder name (enter 'done' when done)",
-            default: "done"
-          }
+            default: "done",
+          },
         ])
       ).path;
 
@@ -122,41 +175,48 @@ export default async () => {
     } while (path != "done");
   }
 
-  let config = JSON.parse(JSON.stringify(defaultConfig)) as IConfig;
+  return {
+    downloadFFMPEG,
+    usePassword,
+    password,
+    useVideoFolders,
+    videoFolders,
+    useImageFolders,
+    imageFolders,
+  };
+}
 
-  if (downloadFFMPEG) {
-    const ffmpegURL = getFFMpegURL();
-    const ffprobeURL = getFFProbeURL();
+/**
+ * Downloads ffmpeg & ffprobe
+ *
+ * @returns the paths where they were downloaded
+ */
+async function downloadFFLibs() {
+  const ffmpegURL = getFFMpegURL();
+  const ffprobeURL = getFFProbeURL();
 
-    const ffmpegPath = path.basename(ffmpegURL);
-    const ffprobePath = path.basename(ffprobeURL);
+  const ffmpegPath = path.basename(ffmpegURL);
+  const ffprobePath = path.basename(ffprobeURL);
 
-    try {
-      await downloadFile(ffmpegURL, ffmpegPath);
-      await downloadFile(ffprobeURL, ffprobePath);
-    } catch (error) {
-      logger.log(error);
-      logger.error(error.message);
-      process.exit(1);
-    }
-
-    try {
-      logger.log("CHMOD binaries...");
-      chmodSync(ffmpegPath, "111");
-      chmodSync(ffprobePath, "111");
-    } catch (error) {
-      logger.error("Could not make FFMPEG binaries executable");
-    }
-
-    config.FFMPEG_PATH = path.resolve(ffmpegPath);
-    config.FFPROBE_PATH = path.resolve(ffprobePath);
+  try {
+    await downloadFile(ffmpegURL, ffmpegPath);
+    await downloadFile(ffprobeURL, ffprobePath);
+  } catch (error) {
+    logger.log(error);
+    logger.error(error.message);
+    process.exit(1);
   }
 
-  if (usePassword) config.PASSWORD = sha(password);
+  try {
+    logger.log("CHMOD binaries...");
+    chmodSync(ffmpegPath, "111");
+    chmodSync(ffprobePath, "111");
+  } catch (error) {
+    logger.error("Could not make FFMPEG binaries executable");
+  }
 
-  if (useVideoFolders) config.VIDEO_PATHS = videoFolders;
-
-  if (useImageFolders) config.IMAGE_PATHS = imageFolders;
-
-  return config;
-};
+  return {
+    ffmpegPath,
+    ffprobePath,
+  };
+}

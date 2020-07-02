@@ -44,8 +44,13 @@ function createItem(type: LogType, text: string) {
 }
 
 function appendToLog(item: ILogData) {
-  const config = getConfig();
-  if (config && logArray.length == config.MAX_LOG_SIZE) logArray.shift();
+  // For some reason, when directly testing config/index.ts (example: in config/index.spec.ts)
+  // this file cannot resolve config/index.ts and the imported module will be undefined
+  // causing undefined.getConfig() to throw an error
+  if (process.env.NODE_ENV !== "test") {
+    const config = getConfig();
+    if (config && logArray.length == config.MAX_LOG_SIZE) logArray.shift();
+  }
   logArray.push(item);
 }
 
@@ -60,7 +65,7 @@ export async function logToFile() {
 function merge(...args: any[]) {
   return args
     .map((a) => {
-      const str = JSON.stringify(a);
+      const str = JSON.stringify(a, null, 2);
       if (str.startsWith('"') && str.endsWith('"')) return str.slice(1, -1);
       return str;
     })
