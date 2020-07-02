@@ -2,7 +2,7 @@
   <v-container>
     <div v-if="mostRecent">
       <Divider icon="mdi-monitor-cellphone">Most recently watched</Divider>
-      <div style="width: 400px" class="mb-3 mx-auto d-flex align-center">
+      <div style="max-width: 400px" class="mb-3 mx-auto d-flex align-center">
         <v-btn
           :loading="loadingItem"
           large

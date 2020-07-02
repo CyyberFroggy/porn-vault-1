@@ -25,8 +25,7 @@
                   <v-avatar
                     class="elevation-8"
                     :size="$vuetify.breakpoint.xsOnly ? 150 : 180"
-                    color="white"
-                    style="border: 3px solid white"
+                    :style="`border: 4px solid ${avatarColor}`"
                   >
                     <v-img :src="avatar"></v-img>
                   </v-avatar>
@@ -757,6 +756,12 @@ export default class ActorDetails extends Vue {
 
   labelSearchQuery = "";
 
+  get avatarColor() {
+    if (!this.currentActor) return "#ffffff";
+    if (!this.currentActor.avatar) return "#ffffff";
+    return this.currentActor.avatar.color || "#ffffff";
+  }
+
   get avatar() {
     if (!this.currentActor) return null;
     if (!this.currentActor.avatar) return null;
@@ -1275,6 +1280,7 @@ export default class ActorDetails extends Vue {
                   ...ActorFragment
                   avatar {
                     _id
+                    color
                   }
                 }
                 scene {
@@ -1618,6 +1624,7 @@ export default class ActorDetails extends Vue {
               }
               avatar {
                 _id
+                color
               }
             }
           }
@@ -1656,6 +1663,7 @@ export default class ActorDetails extends Vue {
             }
             avatar {
               _id
+              color
             }
           }
         }

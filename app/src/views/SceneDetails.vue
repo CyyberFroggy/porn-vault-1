@@ -144,7 +144,11 @@
               <v-subheader style="min-width: 150px">Video duration</v-subheader>
               {{ videoDuration }}
             </div>
-            <div style="word-break: break-all" v-if="currentScene.path" class="px-2 d-flex align-center">
+            <div
+              style="word-break: break-all"
+              v-if="currentScene.path"
+              class="px-2 d-flex align-center"
+            >
               <v-subheader style="min-width: 150px">Filesystem path</v-subheader>
               {{ currentScene.path}}
             </div>
@@ -989,8 +993,16 @@ export default class SceneDetails extends Vue {
             getImages(query: $query, auto: $auto) {
               items {
                 ...ImageFragment
+                labels {
+                  _id
+                  name
+                }
                 actors {
                   ...ActorFragment
+                  avatar {
+                    _id
+                    color
+                  }
                 }
                 scene {
                   _id
