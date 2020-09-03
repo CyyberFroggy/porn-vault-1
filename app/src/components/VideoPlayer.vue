@@ -68,6 +68,14 @@
                       </v-fade-transition>
                     </div>
 
+                    <template v-if="buffered">
+                      <template v-for="i in buffered.length">
+                        <div
+                          class="buffer-bar"
+                          :style="`left: ${percentOfVideo(buffered.start(i - 1)) * 100}%; right: ${100 - percentOfVideo(buffered.end(i - 1)) * 100}%;`"
+                        ></div>
+                      </template>
+                    </template>
                     <div class="progress-bar" :style="`width: ${progressPercent * 100}%;`"></div>
                     <v-tooltip v-for="marker in markers" :key="marker.id" top>
                       <template v-slot:activator="{ on }">
@@ -122,6 +130,7 @@ export default class VideoPlayer extends Vue {
   videoNotice = "";
   previewX = 0;
   progress = 0;
+  buffered = null as any;
   isPlaying = false;
   showPoster = true;
   
@@ -291,6 +300,7 @@ export default class VideoPlayer extends Vue {
       this.showPoster = false;
       vid.ontimeupdate = ev => {
         this.progress = vid.currentTime;
+        this.buffered = vid.buffered;
       };
       this.$emit("play");
     }
@@ -436,15 +446,24 @@ export default class VideoPlayer extends Vue {
       }
     }
 
-    .progress-bar {
+    @mixin bar {
       pointer-events: none;
       transform: translateY(-50%);
       top: 50%;
       position: absolute;
       border-radius: 4px;
       height: 6px;
+    }
+
+    .progress-bar {
+      @include bar;
       left: 0px;
       background: #405090;
+    }
+
+    .buffer-bar {
+      @include bar;
+      background: #757679;
     }
 
     .marker {
