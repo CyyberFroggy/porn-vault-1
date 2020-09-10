@@ -54,12 +54,17 @@
       </v-hover>
     </a>
 
-    <div v-if="value.studio" class="mt-2 pl-4 text-uppercase caption">
-      <router-link
-        class="hover"
-        style="color: inherit; text-decoration: none"
-        :to="`/studio/${value.studio._id}`"
-      >{{ value.studio.name }}</router-link>
+    <div v-if="value.studio || value.releaseDate" class="mt-2 pl-4 pr-4" style="display: flex; justify-content: space-between;">
+      <div v-if="value.studio" class="text-uppercase caption" style="max-width: 50%; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+        <router-link
+          class="hover"
+          style="color: inherit; text-decoration: none"
+          :to="`/studio/${value.studio._id}`"
+        >{{ value.studio.name }}</router-link>
+      </div>
+      <div v-if="value.releaseDate" class="caption">
+        {{ new Date(value.releaseDate).toDateString(undefined, { timeZone: "UTC" }) }}
+      </div>
     </div>
     <v-card-title :class="`${value.studio ? 'pt-0' : ''}`">
       <span
