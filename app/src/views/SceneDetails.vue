@@ -163,6 +163,9 @@
             <div v-if="currentScene.meta.size" class="px-2 d-flex align-center">
               <v-subheader style="min-width: 150px">Video size</v-subheader>
               {{ (currentScene.meta.size / 1000 / 1000).toFixed(0) }} MB
+                <span v-if="currentScene.meta.duration" class="px-2">
+                  [{{Math.round((currentScene.meta.size / 1024 / 1024 * 8 / currentScene.meta.duration + Number.EPSILON) * 100) / 100}} Mbit/s]
+                </span>
             </div>
             <div class="px-2 d-flex align-center">
               <v-subheader style="min-width: 150px">View counter</v-subheader>
